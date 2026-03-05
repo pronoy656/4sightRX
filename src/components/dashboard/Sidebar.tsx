@@ -27,7 +27,7 @@ const items: Array<{
 }> = [
     { href: "/overview", label: "Overview", Icon: LayoutDashboard },
     { href: "/users", label: "Users", Icon: Users },
-    { href: "/facilities", label: "Facilities / Agencies", Icon: Building2 },
+    // { href: "/facilities", label: "Facilities / Agencies", Icon: Building2 },
     { href: "/patients", label: "Patients", Icon: UserRound },
     { href: "/formularies", label: "Formularies", Icon: FileSpreadsheet },
     // { href: "/analytics", label: "Analytics", Icon: BarChart3 },
