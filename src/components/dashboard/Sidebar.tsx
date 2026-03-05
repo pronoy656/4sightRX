@@ -30,7 +30,7 @@ const items: Array<{
     { href: "/facilities", label: "Facilities / Agencies", Icon: Building2 },
     { href: "/patients", label: "Patients", Icon: UserRound },
     { href: "/formularies", label: "Formularies", Icon: FileSpreadsheet },
-    { href: "/analytics", label: "Analytics", Icon: BarChart3 },
+    // { href: "/analytics", label: "Analytics", Icon: BarChart3 },
   ];
 
 export default function Sidebar({ active }: { active?: string }) {
@@ -38,15 +38,16 @@ export default function Sidebar({ active }: { active?: string }) {
   const current = active ?? pathname ?? "";
   return (
     <aside className="h-screen w-64 bg-white text-slate-600 border-r border-slate-200 fixed left-0 top-0 flex flex-col">
-      <div className="p-6">
-        <div className="flex items-center gap-2">
-          <div className="relative w-full h-12">
-            <h1 className="text-2xl font-bold flex items-baseline">
-              <span className="text-[#006FC9]">4</span>
-              <span className="text-slate-400 font-light">+</span>
-              <span className="text-[#006FC9]">sightRX</span>
-            </h1>
-          </div>
+      <div className="p-6 pb-2">
+        <div className="flex items-center w-full min-h-[60px]">
+          <Image
+            src="/logo.png"
+            alt="4sightRX Logo"
+            width={400}
+            height={120}
+            className="w-full h-auto object-contain"
+            priority
+          />
         </div>
       </div>
 
