@@ -40,8 +40,8 @@ export default function VerifyCodeForm() {
   return (
     <div className="w-full">
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold mb-2 text-white">Verify Reset Password</h1>
-        <p className="text-white/50">
+        <h1 className="text-3xl font-bold mb-2 text-slate-900">Verify Reset Password</h1>
+        <p className="text-slate-500">
           Enter the code sent to your email to reset your password.
         </p>
       </div>
@@ -57,14 +57,14 @@ export default function VerifyCodeForm() {
               value={digit}
               onChange={(e) => handleChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
-              className="w-14 h-16 bg-[#111827] border border-white/5 rounded-xl text-center text-2xl font-bold text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+              className="w-14 h-16 bg-slate-50 border border-slate-200 rounded-xl text-center text-2xl font-bold text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
             />
           ))}
         </div>
 
         <Button
           type="submit"
-          variant="premium"
+          variant="brand"
           className="w-full h-12 text-base"
           disabled={loading}
         >

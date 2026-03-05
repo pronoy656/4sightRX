@@ -21,6 +21,8 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         premium:
           "bg-[#0070F3] bg-gradient-to-r from-[#0061E0] via-[#0080FF] to-[#0061E0] hover:from-[#0052CC] hover:via-[#0070F3] hover:to-[#0052CC] text-white shadow-[0_4px_14px_0_rgba(0,118,255,0.39)] hover:shadow-[0_6px_20px_rgba(0,118,255,0.23)] active:scale-[0.98] border border-blue-400/20",
+        brand:
+          "bg-[#0C3064] text-white hover:bg-[#0C3064]/90 shadow-sm transition-all active:scale-[0.98]",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
