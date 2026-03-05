@@ -75,12 +75,7 @@ export default function Sidebar({ active }: { active?: string }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-200">
-        <button className="flex items-center gap-3 px-6 py-2 text-sm text-slate-500 hover:text-slate-700 w-full transition-colors">
-          <ChevronLeft className="h-5 w-5" />
-          <span>Collapse</span>
-        </button>
-      </div>
+
     </aside>
   );
 }
