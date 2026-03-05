@@ -15,14 +15,27 @@ export default function AuthLayoutShell({
   return (
     <div className="min-h-screen grid md:grid-cols-2 bg-white text-black">
       {/* Left Side: Hero Image and Text */}
-      <div className="relative hidden md:block overflow-hidden">
+      <div className="relative hidden md:flex flex-col justify-end p-12 overflow-hidden">
         <Image
-          src="/Container.png"
-          alt="Auth Hero"
+          src="/auth-hero.png"
+          alt="Healthcare professionals collaborating"
           priority
           fill
           className="object-cover"
         />
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#002D54]/90 via-[#002D54]/40 to-transparent" />
+
+        {/* Text Content over Image */}
+        <div className="relative z-10 max-w-lg">
+          <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
+            Advancing Patient Care Through Precision Data
+          </h1>
+          <p className="text-lg text-blue-50/80 leading-relaxed font-medium">
+            Join thousands of specialized healthcare professionals using 4sightRX
+            to streamline clinical decision-making and improve patient outcomes.
+          </p>
+        </div>
       </div>
 
       {/* Right Side: Login Form */}
