@@ -20,7 +20,7 @@ export default function TopBar() {
       <div className="flex items-center gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-3 text-right hover:bg-slate-50 p-1.5 rounded-lg transition-colors outline-none">
+            <button className="flex items-center gap-3 text-right hover:bg-slate-50 p-1.5 rounded-lg transition-colors outline-none cursor-pointer">
               <div>
                 <div className="text-sm font-semibold text-slate-700">Super Admin</div>
                 <div className="text-[10px] text-slate-400">admin@4sightrx.com</div>
