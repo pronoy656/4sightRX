@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CashFlowIQ Admin",
-  description: "Admin dashboard for Income-Expense Tracker",
+  title: "4sightRX Admin",
+  description: "Admin dashboard for 4sightRX",
 };
 
 export default function RootLayout({
