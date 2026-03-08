@@ -30,7 +30,7 @@ const items: Array<{
     // { href: "/facilities", label: "Facilities / Agencies", Icon: Building2 },
     { href: "/patients", label: "Patients", Icon: UserRound },
     { href: "/formularies", label: "Formularies", Icon: FileSpreadsheet },
-    // { href: "/analytics", label: "Analytics", Icon: BarChart3 },
+    { href: "/analytics", label: "Analytics", Icon: BarChart3 },
   ];
 
 export default function Sidebar({ active }: { active?: string }) {
