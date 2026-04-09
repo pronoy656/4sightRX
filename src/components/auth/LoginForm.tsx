@@ -1,22 +1,39 @@
 "use client";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginForm() {
   const router = useRouter();
+  const { login } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      await login(email, password);
       router.push("/overview");
-    }, 600);
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Invalid email or password. Please try again.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -25,22 +42,36 @@ export default function LoginForm() {
         <h1 className="text-3xl font-bold mb-2 text-slate-900">Welcome Back</h1>
         <p className="text-slate-500">Login to your account</p>
       </div>
+
       <form onSubmit={onSubmit} className="space-y-6">
+        {/* Error Message */}
+        {error && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Email</label>
           <Input
             type="email"
             required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
             className="h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-500/20"
           />
         </div>
+
         <div className="space-y-2 text-left">
           <label className="text-sm font-medium text-slate-700">Password</label>
           <div className="relative">
             <Input
               type={showPassword ? "text" : "password"}
               required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
               className="h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-500/20 pr-12"
             />
@@ -65,7 +96,10 @@ export default function LoginForm() {
             </div>
             <span className="text-sm text-slate-500">Remember Password</span>
           </div>
-          <Link href="/reset" className="text-sm text-slate-900 underline hover:text-blue-600 transition-colors">
+          <Link
+            href="/reset"
+            className="text-sm text-slate-900 underline hover:text-blue-600 transition-colors"
+          >
             Forgot Password
           </Link>
         </div>
