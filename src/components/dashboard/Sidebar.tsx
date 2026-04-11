@@ -14,6 +14,7 @@ import {
   LogOut,
   LucideIcon,
   Shield,
+  Building2,
 } from "lucide-react";
 
 type IconType = LucideIcon;
@@ -26,6 +27,7 @@ const items: Array<{
   { href: "/overview", label: "Overview", Icon: LayoutDashboard },
   { href: "/users", label: "Users", Icon: Users },
   { href: "/patients", label: "Patients", Icon: UserRound },
+  { href: "/facilities", label: "Facilities", Icon: Building2 }, // New item
   { href: "/formularies", label: "Formularies", Icon: FileSpreadsheet },
 ];
 
