@@ -1,5 +1,6 @@
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function DashboardLayout({
   children,
@@ -7,12 +8,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-white text-black">
-      <Sidebar />
-      <div className="ml-64 flex flex-col min-h-screen">
-        <TopBar />
-        <main className="p-6 flex-1 bg-white">{children}</main>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-white text-black">
+        <Sidebar />
+        <div className="ml-64 flex flex-col min-h-screen">
+          <TopBar />
+          <main className="p-6 flex-1 bg-white">{children}</main>
+        </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

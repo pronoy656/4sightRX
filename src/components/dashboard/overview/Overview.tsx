@@ -18,7 +18,7 @@ export default function Overview() {
       </div>
 
       {/* Row 1: Main Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard
           label="Total Users"
           value="1,247"
@@ -27,14 +27,7 @@ export default function Overview() {
           iconBgColor="bg-blue-500/10"
           iconColor="text-blue-500"
         />
-        <StatCard
-          label="Active Facilities"
-          value="48"
-          trend="+3%"
-          Icon={Building2}
-          iconBgColor="bg-[#00A3A3]/10"
-          iconColor="text-[#00A3A3]"
-        />
+
         <StatCard
           label="Active Patients"
           value="3,842"
@@ -43,10 +36,7 @@ export default function Overview() {
           iconBgColor="bg-purple-500/10"
           iconColor="text-purple-500"
         />
-      </div>
 
-      {/* Row 2: Performance Stat Cards (From Image) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
           label="Total Cost Savings"
           value="$157K"
@@ -56,15 +46,7 @@ export default function Overview() {
           iconBgColor="bg-emerald-500/10"
           iconColor="text-emerald-600"
         />
-        <StatCard
-          label="Acceptance Rate"
-          value="91%"
-          trend="+3%"
-          description="Current month"
-          Icon={Target}
-          iconBgColor="bg-blue-600/10"
-          iconColor="text-blue-600"
-        />
+
         <StatCard
           label="Interchanges Made"
           value="2,847"
@@ -76,38 +58,12 @@ export default function Overview() {
         />
       </div>
 
+
+
       {/* Row 2: Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CostSavingsChart />
         <AcceptanceRateChart />
-      </div>
-
-      {/* Row 3: Secondary Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard
-          label="Formulary Changes"
-          value="127"
-          trend="This month"
-          Icon={FileVideo}
-          iconBgColor="bg-indigo-500/10"
-          iconColor="text-indigo-500"
-        />
-        <StatCard
-          label="Avg. Time Savings"
-          value="4.2 hrs"
-          trend="Per reconciliation"
-          Icon={Clock}
-          iconBgColor="bg-emerald-500/10"
-          iconColor="text-emerald-500"
-        />
-        <StatCard
-          label="Acceptance Rate"
-          value="91%"
-          trend="+3% from last month"
-          Icon={TrendingUp}
-          iconBgColor="bg-violet-500/10"
-          iconColor="text-violet-500"
-        />
       </div>
 
       {/* Row 4: Recent Activity */}

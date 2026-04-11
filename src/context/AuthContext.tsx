@@ -54,19 +54,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Login ──────────────────────────────────────────────────────────────────
 
   const login = async (email: string, password: string) => {
-    const response = await axiosSecure.post("/api/auth/login", {
+    const response = await axiosSecure.post("/auth/login", {
       email,
       password,
     });
 
-    const { token: jwtToken, user: userData } = response.data;
+    if (response.data?.success) {
+      const { token: jwtToken, user: userData } = response.data.data;
 
-    // Persist to localStorage
-    localStorage.setItem("access-token", jwtToken);
-    localStorage.setItem("auth-user", JSON.stringify(userData));
+      // Persist to localStorage
+      localStorage.setItem("access-token", jwtToken);
+      localStorage.setItem("auth-user", JSON.stringify(userData));
 
-    setToken(jwtToken);
-    setUser(userData);
+      setToken(jwtToken);
+      setUser(userData);
+    } else {
+      throw new Error(response.data?.message || "Login failed");
+    }
   };
 
   // ── Logout ─────────────────────────────────────────────────────────────────

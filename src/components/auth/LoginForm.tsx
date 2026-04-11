@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -10,7 +10,16 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function LoginForm() {
   const router = useRouter();
-  const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const { login, isAuthenticated, isLoading } = useAuth();
+  
+  const callbackUrl = searchParams.get("callbackUrl") || "/overview";
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace(callbackUrl);
+    }
+  }, [isAuthenticated, isLoading, router, callbackUrl]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,7 +34,7 @@ export default function LoginForm() {
 
     try {
       await login(email, password);
-      router.push("/overview");
+      router.push(callbackUrl);
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data
