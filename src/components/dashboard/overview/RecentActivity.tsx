@@ -1,65 +1,55 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     UserPlus,
     FileText,
     UserCheck,
     CheckCircle2,
     Settings,
-    Clock
+    Clock,
+    Activity
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import axiosSecure from "@/components/hook/axiosSecure";
 
-const activities = [
-    {
-        id: 1,
-        title: "New user added",
-        description: "Dr. Emily Chen • St. Mary's Hospital",
-        time: "5 min ago",
-        Icon: UserPlus,
-        iconBg: "bg-blue-50",
-        iconColor: "text-blue-600",
-    },
-    {
-        id: 2,
-        title: "Formulary updated",
-        description: "PharmD Sarah Johnson • Comfort Care Hospice",
-        time: "12 min ago",
-        Icon: FileText,
-        iconBg: "bg-purple-50",
-        iconColor: "text-purple-600",
-    },
-    {
-        id: 3,
-        title: "Patient added",
-        description: "Nurse Mike Peterson • Greenwood LTC",
-        time: "23 min ago",
-        Icon: UserCheck,
-        iconBg: "bg-emerald-50",
-        iconColor: "text-emerald-600",
-    },
-    {
-        id: 4,
-        title: "Interchange approved",
-        description: "Dr. Robert Lee • Memorial Medical",
-        time: "1 hour ago",
-        Icon: CheckCircle2,
-        iconBg: "bg-indigo-50",
-        iconColor: "text-indigo-600",
-    },
-    {
-        id: 5,
-        title: "Facility configuration changed",
-        description: "Admin Team • All Facilities",
-        time: "2 hours ago",
-        Icon: Settings,
-        iconBg: "bg-slate-900",
-        iconColor: "text-white",
-    },
-];
+interface ActivityItem {
+    _id: string;
+    name: string;
+    action: string;
+    timeAgo: string;
+}
 
 export function RecentActivity() {
+    const [activities, setActivities] = useState<ActivityItem[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchActivities = async () => {
+            try {
+                const response = await axiosSecure.get("/analytics/recent-activities");
+                if (response.data.success) {
+                    setActivities(response.data.data);
+                }
+            } catch (error) {
+                console.error("Error fetching recent activities:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchActivities();
+    }, []);
+
+    const getIconForAction = (action: string) => {
+        const lowerAction = action.toLowerCase();
+        if (lowerAction.includes("patient")) return { Icon: UserCheck, bg: "bg-emerald-50", color: "text-emerald-600" };
+        if (lowerAction.includes("user")) return { Icon: UserPlus, bg: "bg-blue-50", color: "text-blue-600" };
+        if (lowerAction.includes("approved") || lowerAction.includes("completed")) return { Icon: CheckCircle2, bg: "bg-indigo-50", color: "text-indigo-600" };
+        if (lowerAction.includes("update") || lowerAction.includes("edit")) return { Icon: FileText, bg: "bg-purple-50", color: "text-purple-600" };
+        return { Icon: Activity, bg: "bg-slate-100", color: "text-slate-600" };
+    };
+
     return (
         <Card className="bg-white border-slate-100 shadow-sm rounded-xl">
             <CardHeader className="flex flex-row items-center justify-between pb-6">
@@ -74,24 +64,33 @@ export function RecentActivity() {
                 </button>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="divide-y divide-slate-100">
-                    {activities.map((activity) => (
-                        <div key={activity.id} className="flex items-center justify-between p-4 px-6 hover:bg-slate-50 transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", activity.iconBg)}>
-                                    <activity.Icon className={cn("h-5 w-5", activity.iconColor)} />
+                {loading ? (
+                    <div className="p-8 text-center text-slate-400 text-sm">Loading activities...</div>
+                ) : activities.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 text-sm">No recent activities found.</div>
+                ) : (
+                    <div className="divide-y divide-slate-100">
+                        {activities.map((activity) => {
+                            const { Icon, bg, color } = getIconForAction(activity.action);
+                            return (
+                                <div key={activity._id} className="flex items-center justify-between p-4 px-6 hover:bg-slate-50 transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", bg)}>
+                                            <Icon className={cn("h-5 w-5", color)} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-800">{activity.action}</p>
+                                            <p className="text-xs text-slate-400">{activity.name}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-slate-400 whitespace-nowrap">
+                                        {activity.timeAgo}
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-sm font-bold text-slate-800">{activity.title}</p>
-                                    <p className="text-xs text-slate-400">{activity.description}</p>
-                                </div>
-                            </div>
-                            <div className="text-xs text-slate-400 whitespace-nowrap">
-                                {activity.time}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

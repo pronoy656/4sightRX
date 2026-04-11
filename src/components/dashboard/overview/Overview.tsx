@@ -1,12 +1,43 @@
 "use client";
-import React from "react";
-import { Users, Building2, UserRound, FileVideo, Clock, TrendingUp, DollarSign, Target } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Users, UserRound, TrendingUp, DollarSign } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { CostSavingsChart } from "./CostSavingsChart";
 import { AcceptanceRateChart } from "./AcceptanceRateChart";
 import { RecentActivity } from "./RecentActivity";
+import axiosSecure from "@/components/hook/axiosSecure";
+
+interface DashboardStats {
+  totalUsers: number;
+  totalCostSavings: number;
+  totalInterchangeMode: number;
+}
 
 export default function Overview() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await axiosSecure.get("analytics/dashboard/analytics");
+        if (response.data.success) {
+          setStats(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard analytics:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const formatValue = (val: number) => {
+    return new Intl.NumberFormat('en-US').format(val);
+  };
+
   return (
     <div className="space-y-8 pb-12">
       {/* Header Section */}
@@ -21,8 +52,8 @@ export default function Overview() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard
           label="Total Users"
-          value="1,247"
-          trend="+12%"
+          value={loading ? "..." : formatValue(stats?.totalUsers || 0)}
+
           Icon={Users}
           iconBgColor="bg-blue-500/10"
           iconColor="text-blue-500"
@@ -30,8 +61,7 @@ export default function Overview() {
 
         <StatCard
           label="Active Patients"
-          value="3,842"
-          trend="+8%"
+          value={loading ? "..." : "3,842"} // No specific API for this yet based on the request, keeping mock
           Icon={UserRound}
           iconBgColor="bg-purple-500/10"
           iconColor="text-purple-500"
@@ -39,9 +69,8 @@ export default function Overview() {
 
         <StatCard
           label="Total Cost Savings"
-          value="$157K"
-          trend="+18%"
-          description="Last 6 months"
+          value={loading ? "..." : `$${formatValue(stats?.totalCostSavings || 0)}`}
+          // description="Total accumulated savings"
           Icon={DollarSign}
           iconBgColor="bg-emerald-500/10"
           iconColor="text-emerald-600"
@@ -49,16 +78,13 @@ export default function Overview() {
 
         <StatCard
           label="Interchanges Made"
-          value="2,847"
-          trend="+12%"
-          description="Last 6 months"
+          value={loading ? "..." : formatValue(stats?.totalInterchangeMode || 0)}
+          // description="Total therapeutic interchanges"
           Icon={TrendingUp}
           iconBgColor="bg-orange-500/10"
           iconColor="text-orange-600"
         />
       </div>
-
-
 
       {/* Row 2: Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
