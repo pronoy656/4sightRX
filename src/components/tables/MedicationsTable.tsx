@@ -47,7 +47,7 @@ export function MedicationsTable() {
                 params: {
                     page: currentPage,
                     limit: itemsPerPage,
-                    searchTerm: debouncedSearch,
+                    search: debouncedSearch,
                 },
             });
             if (response.data.success) {
