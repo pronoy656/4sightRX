@@ -19,16 +19,33 @@ import {
 
 type IconType = LucideIcon;
 
-const items: Array<{
+interface NavItem {
   href: string;
   label: string;
   Icon: IconType;
-}> = [
-  { href: "/overview", label: "Overview", Icon: LayoutDashboard },
-  { href: "/users", label: "Users", Icon: Users },
-  { href: "/patients", label: "Patients", Icon: UserRound },
-  { href: "/facilities", label: "Facilities", Icon: Building2 }, // New item
-  { href: "/formularies", label: "Formularies", Icon: FileSpreadsheet },
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const sections: NavSection[] = [
+  {
+    title: "Dashboard",
+    items: [
+      { href: "/overview", label: "Overview", Icon: LayoutDashboard },
+    ],
+  },
+  {
+    title: "Administration",
+    items: [
+      { href: "/users", label: "User Management", Icon: Users },
+      { href: "/patients", label: "Patient Records", Icon: UserRound },
+      { href: "/facilities", label: "Facilities & Agencies", Icon: Building2 },
+      { href: "/formularies", label: "Drug Formularies", Icon: FileSpreadsheet },
+    ],
+  },
 ];
 
 export default function Sidebar({ active }: { active?: string }) {
@@ -41,88 +58,111 @@ export default function Sidebar({ active }: { active?: string }) {
     : user?.email?.slice(0, 2).toUpperCase() ?? "SA";
 
   const displayName = user?.name ?? "Super Admin";
-  const displayEmail = user?.email ?? "admin@4sightrx.com";
+  const displayRole = "System Administrator";
 
   return (
-    <aside className="h-screen w-64 bg-white text-slate-600 border-r border-slate-200 fixed left-0 top-0 flex flex-col">
-      {/* Logo */}
-      <div className="p-6 pb-4">
-        <div className="flex items-center w-full min-h-[52px]">
-          <Image
-            src="/logo.png"
-            alt="4sightRX Logo"
-            width={400}
-            height={120}
-            className="w-full h-auto object-contain"
-            priority
-          />
-        </div>
+    <aside className="h-screen w-64 bg-white text-slate-600 border-r border-slate-100 fixed left-0 top-0 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-50">
+      {/* Brand Logo Section */}
+      <div className="p-8 pb-6">
+        <Link href="/overview" className="block transition-transform duration-300 hover:scale-[1.02]">
+          <div className="flex items-center w-full min-h-[52px]">
+            <Image
+              src="/logo.png"
+              alt="4sightRX Logo"
+              width={400}
+              height={120}
+              className="w-full h-auto object-contain"
+              priority
+            />
+          </div>
+        </Link>
       </div>
 
-      <Separator className="mx-4 w-auto" />
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {items.map((item) => {
-          const isActive = current === item.href || current.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200 relative rounded-xl mx-0",
-                isActive
-                  ? "bg-blue-50 text-[#006FC9] font-medium"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-              )}
-            >
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-[#006FC9]" />
-              )}
-              <item.Icon
-                className={cn(
-                  "h-4.5 w-4.5 shrink-0",
-                  isActive ? "text-[#006FC9]" : "text-slate-400"
-                )}
-              />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+      {/* Main Navigation Scrollable Area */}
+      <nav className="flex-1 px-4 py-4 space-y-8 overflow-y-auto no-scrollbar">
+        {sections.map((section, idx) => (
+          <div key={idx} className="space-y-2">
+            <h3 className="px-4 text-[11px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-3">
+              {section.title}
+            </h3>
+            <div className="space-y-1">
+              {section.items.map((item) => {
+                const isActive = current === item.href || current.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "group flex items-center gap-3.5 px-4 py-3 text-[13.5px] transition-all duration-300 relative rounded-2xl",
+                      isActive
+                        ? "bg-[#002B54]/[0.03] text-[#002B54] font-bold shadow-[0_4px_12px_rgba(0,43,84,0.05)]"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                    )}
+                  >
+                    {isActive && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-[#002B54] shadow-[2px_0_8px_rgba(0,43,84,0.3)]" />
+                    )}
+                    <item.Icon
+                      className={cn(
+                        "h-[18px] w-[18px] transition-all duration-300 group-hover:scale-110",
+                        isActive ? "text-[#002B54]" : "text-slate-400 group-hover:text-slate-600"
+                      )}
+                    />
+                    <span className="relative z-10">{item.label}</span>
+                    {!isActive && (
+                      <div className="absolute inset-0 bg-slate-100 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity -z-10 scale-95 group-hover:scale-100 duration-300" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
-      <Separator className="mx-4 w-auto" />
+      {/* Footer: User Profile & Logout */}
+      <div className="p-4 mt-auto border-t border-slate-50 bg-slate-50/50">
+        <div className="space-y-3">
+          {/* User Profile Card */}
+          <div className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-white border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-md hover:border-blue-100 group">
+            <div className="relative shrink-0">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-[#002B54] to-[#00509E] flex items-center justify-center text-white text-xs font-bold shadow-inner transition-transform duration-500 group-hover:rotate-[360deg]">
+                {initials}
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-sm animate-pulse" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-bold text-slate-800 truncate leading-tight">{displayName}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Shield className="h-3 w-3 text-[#002B54]" />
+                <p className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-wider">{displayRole}</p>
+              </div>
+            </div>
+          </div>
 
-      {/* Bottom: User card + Logout */}
-      <div className="p-3 space-y-2">
-        {/* Mini user card */}
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100">
-          <div className="relative shrink-0">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#006FC9] to-[#00A3A3] flex items-center justify-center text-white text-[11px] font-bold shadow-sm">
-              {initials}
+          {/* Logout Button */}
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-[13px] text-red-500 hover:text-red-700 hover:bg-red-50/80 transition-all duration-300 group font-bold"
+          >
+            <div className="h-8 w-8 rounded-xl bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-all duration-300 shadow-sm group-hover:shadow group-hover:-translate-y-0.5">
+              <LogOut className="h-4 w-4 text-red-500 group-hover:scale-110 transition-transform duration-300" />
             </div>
-            <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-400 ring-1.5 ring-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-800 truncate">{displayName}</p>
-            <div className="flex items-center gap-1">
-              <Shield className="h-2.5 w-2.5 text-[#006FC9]" />
-              <p className="text-[10px] text-slate-400 truncate">Admin</p>
-            </div>
-          </div>
+            <span>Sign Out</span>
+          </button>
         </div>
-
-        {/* Logout Button */}
-        <button
-          onClick={logout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 group border border-transparent hover:border-red-100"
-        >
-          <div className="h-7 w-7 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors duration-200">
-            <LogOut className="h-3.5 w-3.5 text-red-500 group-hover:scale-110 transition-transform duration-200" />
-          </div>
-          <span className="font-medium">Log out</span>
-        </button>
       </div>
+
+      {/* Scrollbar Customization */}
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </aside>
   );
 }
