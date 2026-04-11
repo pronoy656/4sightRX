@@ -1,7 +1,6 @@
 "use client";
-
-import React from "react";
-import { X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, AlertCircle } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -19,19 +18,94 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import axiosSecure from "@/components/hook/axiosSecure";
+import { toast } from "sonner";
+import { APIMedication } from "../tables/MedicationsTable";
 
 interface AddMedicationDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    initialData?: any;
+    initialData?: APIMedication | null;
     mode: "add" | "edit";
+    onSuccess?: () => void;
 }
 
-export function AddMedicationDialog({ open, onOpenChange, initialData, mode }: AddMedicationDialogProps) {
+export function AddMedicationDialog({ open, onOpenChange, initialData, mode, onSuccess }: AddMedicationDialogProps) {
+    const [formData, setFormData] = useState({
+        medicationName: "",
+        strength: "",
+        form: "tablet",
+        dose: "",
+        route: "Oral (PO)",
+        frequency: "Once daily (QD)",
+        duration: "",
+    });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (open) {
+            if (mode === "edit" && initialData) {
+                setFormData({
+                    medicationName: initialData.medicationName || "",
+                    strength: initialData.strength || "",
+                    form: (initialData.form || "tablet").toLowerCase(),
+                    dose: initialData.dose || "",
+                    route: initialData.route || "Oral (PO)",
+                    frequency: initialData.frequency || "Once daily (QD)",
+                    duration: initialData.duration || "",
+                });
+            } else {
+                setFormData({
+                    medicationName: "",
+                    strength: "",
+                    form: "tablet",
+                    dose: "",
+                    route: "Oral (PO)",
+                    frequency: "Once daily (QD)",
+                    duration: "",
+                });
+            }
+            setError(null);
+        }
+    }, [open, mode, initialData]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.id]: e.target.value });
+    };
+
+    const handleSelectChange = (value: string, field: string) => {
+        setFormData({ ...formData, [field]: value });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        try {
+            if (mode === "add") {
+                await axiosSecure.post("/medications", formData);
+                toast.success("Medication added successfully");
+            } else {
+                await axiosSecure.patch(`/medications/${initialData?._id}`, formData);
+                toast.success("Medication updated successfully");
+            }
+            if (onSuccess) onSuccess();
+            onOpenChange(false);
+        } catch (err: any) {
+            console.error("Error saving medication:", err);
+            const msg = err.response?.data?.message || "Failed to save medication";
+            setError(msg);
+            toast.error(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white">
-                <DialogHeader className="p-6 border-b border-slate-100 flex flex-row items-center justify-between space-y-0">
+            <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="p-6 border-b border-slate-100 flex flex-row items-center justify-between space-y-0 sticky top-0 bg-white z-10">
                     <DialogTitle className="text-xl font-bold text-slate-800">
                         {mode === "add" ? "Add Medication" : "Edit Medication"}
                     </DialogTitle>
@@ -41,12 +115,21 @@ export function AddMedicationDialog({ open, onOpenChange, initialData, mode }: A
                     </DialogClose>
                 </DialogHeader>
 
-                <div className="p-8 pb-10 space-y-5">
+                <form onSubmit={handleSubmit} className="p-8 pb-10 space-y-5">
+                    {error && (
+                        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
+                            <AlertCircle className="h-4 w-4 shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                    )}
                     <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-slate-600">Medication Name*</Label>
+                        <Label htmlFor="medicationName" className="text-sm font-semibold text-slate-600">Medication Name*</Label>
                         <Input
-                            placeholder="Start typing medication name..."
-                            defaultValue={initialData?.name}
+                            id="medicationName"
+                            placeholder="e.g., Omeprazole"
+                            value={formData.medicationName}
+                            onChange={handleChange}
+                            required
                             className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
                         />
                     </div>
@@ -54,26 +137,29 @@ export function AddMedicationDialog({ open, onOpenChange, initialData, mode }: A
                     <div className="grid grid-cols-2 gap-5">
                         <div className="space-y-2">
                             <Label className="text-sm font-semibold text-slate-600">Form*</Label>
-                            <Select defaultValue={initialData?.form || "Capsule"}>
+                            <Select value={formData.form} onValueChange={(v) => handleSelectChange(v, "form")}>
                                 <SelectTrigger className="h-11 rounded-xl border-slate-200">
                                     <SelectValue placeholder="Select form" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Tablet">Tablet</SelectItem>
-                                    <SelectItem value="Capsule">Capsule</SelectItem>
-                                    <SelectItem value="Liquid">Liquid</SelectItem>
-                                    <SelectItem value="Injection">Injection</SelectItem>
-                                    <SelectItem value="Cream">Cream</SelectItem>
-                                    <SelectItem value="Patch">Patch</SelectItem>
-                                    <SelectItem value="Inhaler">Inhaler</SelectItem>
+                                    <SelectItem value="tablet">tablet</SelectItem>
+                                    <SelectItem value="capsule">capsule</SelectItem>
+                                    <SelectItem value="liquid">liquid</SelectItem>
+                                    <SelectItem value="injection">injection</SelectItem>
+                                    <SelectItem value="cream">cream</SelectItem>
+                                    <SelectItem value="patch">patch</SelectItem>
+                                    <SelectItem value="inhaler">inhaler</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-sm font-semibold text-slate-600">Strength*</Label>
+                            <Label htmlFor="strength" className="text-sm font-semibold text-slate-600">Strength*</Label>
                             <Input
-                                placeholder="e.g., 10mg"
-                                defaultValue={initialData?.strength}
+                                id="strength"
+                                placeholder="e.g., 20 mg"
+                                value={formData.strength}
+                                onChange={handleChange}
+                                required
                                 className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
                             />
                         </div>
@@ -81,16 +167,19 @@ export function AddMedicationDialog({ open, onOpenChange, initialData, mode }: A
 
                     <div className="grid grid-cols-2 gap-5">
                         <div className="space-y-2">
-                            <Label className="text-sm font-semibold text-slate-600">Dose*</Label>
+                            <Label htmlFor="dose" className="text-sm font-semibold text-slate-600">Dose*</Label>
                             <Input
-                                placeholder="Dose"
-                                defaultValue={initialData?.dose}
+                                id="dose"
+                                placeholder="e.g., 1 capsule"
+                                value={formData.dose}
+                                onChange={handleChange}
+                                required
                                 className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
                             />
                         </div>
                         <div className="space-y-2">
                             <Label className="text-sm font-semibold text-slate-600">Route*</Label>
-                            <Select defaultValue={initialData?.route || "Oral (PO)"}>
+                            <Select value={formData.route} onValueChange={(v) => handleSelectChange(v, "route")}>
                                 <SelectTrigger className="h-11 rounded-xl border-slate-200">
                                     <SelectValue placeholder="Select route" />
                                 </SelectTrigger>
@@ -111,7 +200,7 @@ export function AddMedicationDialog({ open, onOpenChange, initialData, mode }: A
                     <div className="grid grid-cols-2 gap-5">
                         <div className="space-y-2">
                             <Label className="text-sm font-semibold text-slate-600">Frequency*</Label>
-                            <Select defaultValue={initialData?.frequency || "Once daily (QD)"}>
+                            <Select value={formData.frequency} onValueChange={(v) => handleSelectChange(v, "frequency")}>
                                 <SelectTrigger className="h-11 rounded-xl border-slate-200">
                                     <SelectValue placeholder="Select frequency" />
                                 </SelectTrigger>
@@ -128,10 +217,12 @@ export function AddMedicationDialog({ open, onOpenChange, initialData, mode }: A
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-sm font-semibold text-slate-600">Duration</Label>
+                            <Label htmlFor="duration" className="text-sm font-semibold text-slate-600">Duration</Label>
                             <Input
+                                id="duration"
                                 placeholder="e.g., 7 days, ongoing"
-                                defaultValue={initialData?.duration}
+                                value={formData.duration}
+                                onChange={handleChange}
                                 className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
                             />
                         </div>
@@ -139,20 +230,23 @@ export function AddMedicationDialog({ open, onOpenChange, initialData, mode }: A
 
                     <div className="flex items-center gap-4 pt-6">
                         <Button
+                            type="button"
                             variant="outline"
                             className="flex-1 h-12 border-slate-200 rounded-xl text-slate-500 font-bold hover:bg-slate-50 transition-colors"
                             onClick={() => onOpenChange(false)}
+                            disabled={loading}
                         >
                             Cancel
                         </Button>
                         <Button
-                            className="flex-1 h-12 bg-[#002D54] hover:bg-[#002D54]/90 rounded-xl text-white font-bold transition-colors"
-                            onClick={() => onOpenChange(false)}
+                            type="submit"
+                            className="flex-1 h-12 bg-[#002B54] hover:bg-[#002B54]/90 rounded-xl text-white font-bold transition-colors"
+                            disabled={loading}
                         >
-                            Save Medication
+                            {loading ? "Saving..." : "Save Medication"}
                         </Button>
                     </div>
-                </div>
+                </form>
             </DialogContent>
         </Dialog>
     );
