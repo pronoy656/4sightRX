@@ -9,9 +9,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
+import { useState } from "react";
+import ChangePasswordModal from "@/components/auth/ChangePasswordModal";
 
 export default function TopBar() {
   const { user, logout } = useAuth();
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -90,13 +93,16 @@ export default function TopBar() {
                 </div>
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors duration-150">
+              <DropdownMenuItem 
+                onClick={() => setIsChangePasswordOpen(true)}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors duration-150"
+              >
                 <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center">
                   <Settings className="h-4 w-4 text-slate-500" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Settings</p>
-                  <p className="text-[10px] text-slate-400">Account preferences</p>
+                  <p className="text-sm font-medium">Change Password</p>
+                  <p className="text-[10px] text-slate-400">Update your account password</p>
                 </div>
               </DropdownMenuItem>
             </div>
@@ -121,6 +127,8 @@ export default function TopBar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <ChangePasswordModal open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen} />
     </div>
   );
 }

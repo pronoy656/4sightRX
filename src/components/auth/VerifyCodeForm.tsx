@@ -1,12 +1,18 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
+import axiosSecure from "@/components/hook/axiosSecure";
 
 export default function VerifyCodeForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") || "";
+
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState(["", "", "", "", ""]);
 
   const handleChange = (index: number, value: string) => {
@@ -15,7 +21,6 @@ export default function VerifyCodeForm() {
     newCode[index] = value;
     setCode(newCode);
 
-    // Auto-focus next input
     if (value && index < 4) {
       const nextInput = document.getElementById(`code-${index + 1}`);
       nextInput?.focus();
@@ -29,12 +34,33 @@ export default function VerifyCodeForm() {
     }
   };
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const oneTimeCode = Number(code.join(""));
+    
+    if (!email) {
+      setError("Email is missing. Please start the process again.");
+      return;
+    }
+    
+    if (isNaN(oneTimeCode) || code.join("").length !== 5) {
+      // Assuming 5 digit based on the state initialized
+      setError("Please enter a valid verification code.");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      router.push("/new-password");
-    }, 600);
+    setError(null);
+
+    try {
+      await axiosSecure.post("/auth/verify-email", { email, oneTimeCode });
+      router.push(`/new-password?email=${encodeURIComponent(email)}`);
+    } catch (err: any) {
+      const message = err.response?.data?.message || "Verification failed. Please try again.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -47,6 +73,13 @@ export default function VerifyCodeForm() {
       </div>
 
       <form onSubmit={onSubmit} className="space-y-8">
+        {error && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <div className="flex justify-between gap-2">
           {code.map((digit, index) => (
             <input

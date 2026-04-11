@@ -14,6 +14,7 @@ export default function LoginForm() {
   const { login, isAuthenticated, isLoading } = useAuth();
   
   const callbackUrl = searchParams.get("callbackUrl") || "/overview";
+  const resetSuccess = searchParams.get("reset_success") === "true";
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -53,6 +54,12 @@ export default function LoginForm() {
       </div>
 
       <form onSubmit={onSubmit} className="space-y-6">
+        {resetSuccess && !error && (
+          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm px-4 py-3 rounded-lg">
+            <span>Password has been reset successfully. Please log in with your new password.</span>
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
