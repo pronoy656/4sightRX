@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, ChevronsUpDown, Plus, Building2, Edit2, Trash2, MoreHorizontal } from "lucide-react";
+import { Search, ChevronsUpDown, Plus, Building2, Edit2, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,12 +10,6 @@ import { DeleteDialog } from "../dialogs/delete-dialog";
 import axiosSecure from "@/components/hook/axiosSecure";
 import { useDebounce } from "use-debounce";
 import { toast } from "sonner";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface APIFacility {
     _id: string;
@@ -237,33 +231,30 @@ export function FacilitiesTable() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-5 text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-full">
-                                                        <MoreHorizontal className="h-4 w-4 text-slate-400" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-32 rounded-xl border-slate-100 shadow-lg">
-                                                    <DropdownMenuItem 
-                                                        onClick={() => {
-                                                            setSelectedFacility(facility);
-                                                            setIsEditDialogOpen(true);
-                                                        }}
-                                                        className="text-slate-600 font-medium cursor-pointer hover:bg-slate-50"
-                                                    >
-                                                        <Edit2 className="mr-2 h-4 w-4" /> Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem 
-                                                        onClick={() => {
-                                                            setFacilityToDelete(facility);
-                                                            setIsDeleteDialogOpen(true);
-                                                        }}
-                                                        className="text-red-500 font-medium cursor-pointer hover:bg-red-50 hover:text-red-600"
-                                                    >
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => {
+                                                        setSelectedFacility(facility);
+                                                        setIsEditDialogOpen(true);
+                                                    }}
+                                                    className="h-9 w-9 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => {
+                                                        setFacilityToDelete(facility);
+                                                        setIsDeleteDialogOpen(true);
+                                                    }}
+                                                    className="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
