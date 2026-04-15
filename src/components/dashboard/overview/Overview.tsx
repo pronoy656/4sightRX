@@ -10,6 +10,7 @@ import axiosSecure from "@/components/hook/axiosSecure";
 interface DashboardStats {
   totalUsers: number;
   totalCostSavings: number;
+  totalActivePatients: number;
   totalInterchangeMode: number;
 }
 
@@ -61,7 +62,7 @@ export default function Overview() {
 
         <StatCard
           label="Active Patients"
-          value={loading ? "..." : "3,842"} // No specific API for this yet based on the request, keeping mock
+          value={loading ? "..." : formatValue(stats?.totalActivePatients || 0)}
           Icon={UserRound}
           iconBgColor="bg-purple-500/10"
           iconColor="text-purple-500"

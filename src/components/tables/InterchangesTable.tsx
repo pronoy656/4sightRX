@@ -1,86 +1,103 @@
 "use client";
-
-import React, { useState } from "react";
-import { Search, ChevronsUpDown, Plus, Pencil, Trash2, Eye } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Search, ChevronsUpDown, Plus, Pencil, Trash2, Eye, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AddInterchangeDialog } from "@/components/dialogs/AddInterchangeDialog";
 import { ViewInterchangeDialog } from "@/components/dialogs/ViewInterchangeDialog";
 import { DeleteDialog } from "@/components/dialogs/delete-dialog";
 import { cn } from "@/lib/utils";
+import axiosSecure from "@/components/hook/axiosSecure";
+import { useDebounce } from "use-debounce";
+import { toast } from "sonner";
 
-interface Interchange {
-    id: string;
-    currentDrug: string;
+interface APITherapeutic {
+    _id: string;
+    drugName: string;
     alternative: string;
-    costSavings: string;
+    drugClass: string;
+    estimatedSavings: number;
+    dosageEquivalence: string;
     rationale: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
-const initialData: Interchange[] = [
-    {
-        id: "1",
-        currentDrug: "Norvasc 5mg",
-        alternative: "Amlodipine 5mg (1:1)",
-        costSavings: "$240/year",
-        rationale: "Generic equivalent",
-    },
-    {
-        id: "2",
-        currentDrug: "Lipitor 20mg",
-        alternative: "Atorvastatin 20mg (1:1)",
-        costSavings: "$360/year",
-        rationale: "Generic equivalent",
-    },
-    {
-        id: "3",
-        currentDrug: "Plavix 75mg",
-        alternative: "Clopidogrel 75mg (1:1)",
-        costSavings: "$420/year",
-        rationale: "Generic equivalent",
-    },
-];
-
 export function InterchangesTable() {
-    const [interchanges, setInterchanges] = useState<Interchange[]>(initialData);
+    const [interchanges, setInterchanges] = useState<APITherapeutic[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch] = useDebounce(searchQuery, 500);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [selectedInter, setSelectedInter] = useState<Interchange | null>(null);
+    const [selectedInter, setSelectedInter] = useState<APITherapeutic | null>(null);
     const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const itemsPerPage = 10;
 
-    const filteredData = interchanges.filter(
-        (i) =>
-            i.currentDrug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            i.alternative.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const fetchInterchanges = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await axiosSecure.get("therapeutics", {
+                params: {
+                    page: currentPage,
+                    limit: itemsPerPage,
+                    search: debouncedSearch,
+                },
+            });
+            if (response.data.success) {
+                setInterchanges(response.data.data);
+                if (response.data.pagination) {
+                    setTotalPages(response.data.pagination.totalPage);
+                    setTotalRecords(response.data.pagination.total);
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching therapeutics:", error);
+            toast.error("Failed to fetch therapeutic interchanges");
+        } finally {
+            setLoading(false);
+        }
+    }, [currentPage, debouncedSearch]);
 
-    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+    useEffect(() => {
+        fetchInterchanges();
+    }, [fetchInterchanges]);
 
-    const handleView = (inter: Interchange) => {
+    const handleView = (inter: APITherapeutic) => {
         setSelectedInter(inter);
         setIsViewDialogOpen(true);
     };
 
-    const handleEdit = (inter: Interchange) => {
+    const handleEdit = (inter: APITherapeutic) => {
         setSelectedInter(inter);
         setDialogMode("edit");
         setIsAddDialogOpen(true);
     };
 
-    const handleDelete = (inter: Interchange) => {
+    const handleDelete = (inter: APITherapeutic) => {
         setSelectedInter(inter);
         setIsDeleteDialogOpen(true);
     };
 
-    const confirmDelete = () => {
-        setInterchanges(interchanges.filter((i) => i.id !== selectedInter?.id));
+    const confirmDelete = async () => {
+        if (!selectedInter) return;
+        try {
+            const response = await axiosSecure.delete(`therapeutics/${selectedInter._id}`);
+            if (response.data.success) {
+                toast.success("Therapeutic interchange deleted");
+                fetchInterchanges();
+            }
+        } catch (error) {
+            console.error("Error deleting therapeutic:", error);
+            toast.error("Failed to delete therapeutic interchange");
+        }
     };
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
 
     return (
         <div className="space-y-6">
@@ -141,48 +158,65 @@ export function InterchangesTable() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {paginatedData.map((inter) => (
-                                <tr key={inter.id} className="hover:bg-slate-50/50 transition-colors group">
-                                    <td className="px-6 py-5 text-sm font-bold text-slate-800">
-                                        {inter.currentDrug}
-                                    </td>
-                                    <td className="px-6 py-5 text-sm font-medium text-slate-700">
-                                        {inter.alternative}
-                                    </td>
-                                    <td className="px-6 py-5 text-sm font-bold text-[#006FC9]">
-                                        {inter.costSavings}
-                                    </td>
-                                    <td className="px-6 py-5 text-sm font-medium text-slate-400">
-                                        {inter.rationale}
-                                    </td>
-                                    <td className="px-6 py-5 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => handleView(inter)}
-                                                className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleEdit(inter)}
-                                                className="h-9 w-9 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleDelete(inter)}
-                                                className="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-20 text-center text-slate-400 font-medium">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Loader2 className="h-5 w-5 animate-spin" />
+                                            Loading therapeutic interchanges...
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                            ) : interchanges.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-20 text-center text-slate-400 font-medium">
+                                        No therapeutic interchanges found.
+                                    </td>
+                                </tr>
+                            ) : (
+                                interchanges.map((inter) => (
+                                    <tr key={inter._id} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-6 py-5 text-sm font-bold text-slate-800">
+                                            {inter.drugName}
+                                        </td>
+                                        <td className="px-6 py-5 text-sm font-medium text-slate-700">
+                                            {inter.alternative}
+                                        </td>
+                                        <td className="px-6 py-5 text-sm font-bold text-[#006FC9]">
+                                            ${inter.estimatedSavings}/year
+                                        </td>
+                                        <td className="px-6 py-5 text-sm font-medium text-slate-400 break-words max-w-[300px]">
+                                            {inter.rationale}
+                                        </td>
+                                        <td className="px-6 py-5 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleView(inter)}
+                                                    className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleEdit(inter)}
+                                                    className="h-9 w-9 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleDelete(inter)}
+                                                    className="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -190,12 +224,11 @@ export function InterchangesTable() {
                 {/* Pagination section */}
                 <div className="px-6 py-6 border-t border-slate-50 flex items-center justify-between">
                     <div className="text-sm text-slate-500 font-medium">
-                        Showing {filteredData.length > 0 ? startIndex + 1 : 0} of {filteredData.length} records
+                        Showing {interchanges.length > 0 ? startIndex + 1 : 0} to {startIndex + interchanges.length} of {totalRecords} records
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* Same pagination logic as MedicationsTable */}
                         <button
-                            disabled={currentPage === 1}
+                            disabled={currentPage === 1 || loading}
                             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                             className="px-5 py-2.5 text-sm font-bold text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
@@ -208,7 +241,7 @@ export function InterchangesTable() {
                                 className={cn(
                                     "h-10 w-10 flex items-center justify-center text-sm font-bold rounded-xl transition-colors",
                                     currentPage === page
-                                        ? "text-white bg-[#001D3D]"
+                                        ? "text-white bg-[#002B54]"
                                         : "text-slate-600 border border-slate-200 hover:bg-slate-50"
                                 )}
                             >
@@ -216,7 +249,7 @@ export function InterchangesTable() {
                             </button>
                         ))}
                         <button
-                            disabled={currentPage === totalPages || totalPages === 0}
+                            disabled={currentPage === totalPages || totalPages === 0 || loading}
                             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                             className="px-5 py-2.5 text-sm font-bold text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
@@ -231,6 +264,7 @@ export function InterchangesTable() {
                 onOpenChange={setIsAddDialogOpen}
                 mode={dialogMode}
                 initialData={selectedInter}
+                onSuccess={fetchInterchanges}
             />
 
             <ViewInterchangeDialog
@@ -243,7 +277,7 @@ export function InterchangesTable() {
                 open={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
                 onConfirm={confirmDelete}
-                itemName={selectedInter?.currentDrug}
+                itemName={selectedInter?.drugName}
             />
         </div>
     );
