@@ -21,9 +21,10 @@ import {
 import axiosSecure from "@/components/hook/axiosSecure";
 import { toast } from "sonner";
 
-interface AddFacilityDialogProps {
+interface EditFacilityDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    facility: any;
     onSuccess?: () => void;
 }
 
@@ -32,7 +33,7 @@ interface User {
     name: string;
 }
 
-export function AddFacilityDialog({ open, onOpenChange, onSuccess }: AddFacilityDialogProps) {
+export function EditFacilityDialog({ open, onOpenChange, facility, onSuccess }: EditFacilityDialogProps) {
     const [loading, setLoading] = useState(false);
     const [users, setUsers] = useState<User[]>([]);
     const [formData, setFormData] = useState({
@@ -42,18 +43,30 @@ export function AddFacilityDialog({ open, onOpenChange, onSuccess }: AddFacility
         address: "",
         phone: "",
         assignAdmin: "",
+        status: "active",
     });
 
     useEffect(() => {
         if (open) {
             fetchUsers();
+            if (facility) {
+                setFormData({
+                    facilityName: facility.facilityName || "",
+                    type: facility.type || "",
+                    location: facility.location || "",
+                    address: facility.address || "",
+                    phone: facility.phone || "",
+                    assignAdmin: typeof facility.assignAdmin === 'object' ? facility.assignAdmin._id : facility.assignAdmin || "",
+                    status: facility.status || "active",
+                });
+            }
         }
-    }, [open]);
+    }, [open, facility]);
 
     const fetchUsers = async () => {
         try {
             const response = await axiosSecure.get("user/all-users", {
-                params: { limit: 100 } // Get a reasonable number of users
+                params: { limit: 100 }
             });
             if (response.data.success) {
                 setUsers(response.data.data);
@@ -80,23 +93,15 @@ export function AddFacilityDialog({ open, onOpenChange, onSuccess }: AddFacility
 
         setLoading(true);
         try {
-            const response = await axiosSecure.post("/facility", formData);
+            const response = await axiosSecure.patch(`/facility/${facility._id}`, formData);
             if (response.data.success) {
-                toast.success("Facility created successfully");
+                toast.success("Facility updated successfully");
                 onSuccess?.();
                 onOpenChange(false);
-                setFormData({
-                    facilityName: "",
-                    type: "",
-                    location: "",
-                    address: "",
-                    phone: "",
-                    assignAdmin: "",
-                });
             }
         } catch (error: any) {
-            console.error("Error creating facility:", error);
-            toast.error(error.response?.data?.message || "Failed to create facility");
+            console.error("Error updating facility:", error);
+            toast.error(error.response?.data?.message || "Failed to update facility");
         } finally {
             setLoading(false);
         }
@@ -106,7 +111,7 @@ export function AddFacilityDialog({ open, onOpenChange, onSuccess }: AddFacility
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white focus-visible:outline-none">
                 <DialogHeader className="p-6 border-b border-slate-100 flex flex-row items-center justify-between space-y-0 sticky top-0 bg-white z-10">
-                    <DialogTitle className="text-xl font-bold text-slate-800">Add New Facility</DialogTitle>
+                    <DialogTitle className="text-xl font-bold text-slate-800">Edit Facility</DialogTitle>
                     <DialogClose className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-slate-100 transition-colors">
                         <X className="h-5 w-5 text-slate-400" />
                         <span className="sr-only">Close</span>
@@ -145,12 +150,40 @@ export function AddFacilityDialog({ open, onOpenChange, onSuccess }: AddFacility
                             </Select>
                         </div>
                         <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-slate-600">Status <span className="text-red-500">*</span></Label>
+                            <Select 
+                                value={formData.status} 
+                                onValueChange={(val) => handleSelectChange("status", val)}
+                            >
+                                <SelectTrigger className="h-11 rounded-xl border-slate-200">
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-5">
+                        <div className="space-y-2">
                             <Label className="text-sm font-semibold text-slate-600">Location</Label>
                             <Input
                                 name="location"
                                 value={formData.location}
                                 onChange={handleInputChange}
                                 placeholder="New York, NY"
+                                className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-slate-600">Phone</Label>
+                            <Input
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="(555) 123-4567"
                                 className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
                             />
                         </div>
@@ -167,35 +200,23 @@ export function AddFacilityDialog({ open, onOpenChange, onSuccess }: AddFacility
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                            <Label className="text-sm font-semibold text-slate-600">Phone</Label>
-                            <Input
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleInputChange}
-                                placeholder="(555) 123-4567"
-                                className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-sm font-semibold text-slate-600">Assign Admin <span className="text-red-500">*</span></Label>
-                            <Select 
-                                value={formData.assignAdmin} 
-                                onValueChange={(val) => handleSelectChange("assignAdmin", val)}
-                            >
-                                <SelectTrigger className="h-11 rounded-xl border-slate-200">
-                                    <SelectValue placeholder="Select admin" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {users.map((user) => (
-                                        <SelectItem key={user._id} value={user._id}>
-                                            {user.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <div className="space-y-2">
+                        <Label className="text-sm font-semibold text-slate-600">Assign Admin <span className="text-red-500">*</span></Label>
+                        <Select 
+                            value={formData.assignAdmin} 
+                            onValueChange={(val) => handleSelectChange("assignAdmin", val)}
+                        >
+                            <SelectTrigger className="h-11 rounded-xl border-slate-200">
+                                <SelectValue placeholder="Select admin" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {users.map((user) => (
+                                    <SelectItem key={user._id} value={user._id}>
+                                        {user.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="flex items-center gap-4 pt-6">
@@ -212,7 +233,7 @@ export function AddFacilityDialog({ open, onOpenChange, onSuccess }: AddFacility
                             onClick={handleSubmit}
                             disabled={loading}
                         >
-                            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Add Facility"}
+                            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Update Facility"}
                         </Button>
                     </div>
                 </div>
