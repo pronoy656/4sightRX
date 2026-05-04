@@ -1,9 +1,12 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, ChevronsUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronsUpDown, ChevronLeft, ChevronRight, Building2, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { AddUserDialog } from "@/components/dialogs/AddUserDialog";
 import axiosSecure from "@/components/hook/axiosSecure";
 import { useDebounce } from "use-debounce";
 import { toast } from "sonner";
@@ -18,6 +21,12 @@ interface APIUser {
   verified: boolean;
   specialty: string | null;
   hospitalName: string | null;
+  agencyId: string | null;
+  agency?: {
+    _id: string;
+    facilityName: string;
+    location: string;
+  } | null;
   isLogin: boolean;
   createdAt: string;
   updatedAt: string;
@@ -31,7 +40,27 @@ export default function UsersTable() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [agencies, setAgencies] = useState<{ _id: string; facilityName: string }[]>([]);
+  const [selectedAgencyId, setSelectedAgencyId] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const limit = 10;
+
+  const fetchAgencies = async () => {
+    try {
+      const response = await axiosSecure.get("/facility");
+      if (response.data.success) {
+        setAgencies(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching agencies:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAgencies();
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -41,6 +70,9 @@ export default function UsersTable() {
           page: currentPage,
           limit: limit,
           search: debouncedSearch,
+          agencyId: selectedAgencyId === "all" ? undefined : selectedAgencyId,
+          sortBy: sortBy,
+          sortOrder: sortOrder,
         },
       });
       if (response.data.success) {
@@ -54,7 +86,7 @@ export default function UsersTable() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, debouncedSearch]);
+  }, [currentPage, debouncedSearch, selectedAgencyId, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchUsers();
@@ -83,16 +115,25 @@ export default function UsersTable() {
   return (
     <div className="space-y-6">
       {/* Header section */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-800">User Management</h1>
-        <p className="text-slate-500 mt-1 font-medium">
-          Manage users, roles, and permissions across all facilities
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800">User Management</h1>
+          <p className="text-slate-500 mt-1 font-medium">
+            Manage users, roles, and permissions across all facilities
+          </p>
+        </div>
+        <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            className="h-12 px-6 bg-[#002B54] hover:bg-[#002B54]/90 rounded-xl text-white font-bold flex items-center gap-2 transition-colors shrink-0"
+        >
+            <Plus className="h-5 w-5" />
+            Add User
+        </Button>
       </div>
 
-      {/* Search box card */}
-      <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
-        <div className="relative w-full">
+      {/* Search and Filter box card */}
+      <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
           <Input
             placeholder="Search by name or email..."
@@ -104,6 +145,27 @@ export default function UsersTable() {
             className="pl-12 h-12 bg-white border-slate-200 rounded-xl text-slate-800 focus-visible:ring-1 focus-visible:ring-blue-100"
           />
         </div>
+        <div className="w-full md:w-64">
+          <Select
+            value={selectedAgencyId}
+            onValueChange={(value) => {
+              setSelectedAgencyId(value);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl text-slate-800 focus:ring-1 focus:ring-blue-100">
+              <SelectValue placeholder="Filter by Agency" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Agencies</SelectItem>
+              {agencies.map((agency) => (
+                <SelectItem key={agency._id} value={agency._id}>
+                  {agency.facilityName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Table section */}
@@ -113,8 +175,33 @@ export default function UsersTable() {
             <thead>
               <tr className="border-b border-slate-50">
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  <div className="flex items-center gap-1 cursor-pointer hover:text-slate-600 transition-colors">
+                  <div 
+                    className="flex items-center gap-1 cursor-pointer hover:text-slate-600 transition-colors"
+                    onClick={() => {
+                      if (sortBy === "name") {
+                        setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                      } else {
+                        setSortBy("name");
+                        setSortOrder("asc");
+                      }
+                    }}
+                  >
                     NAME <ChevronsUpDown className="h-3 w-3" />
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <div 
+                    className="flex items-center gap-1 cursor-pointer hover:text-slate-600 transition-colors"
+                    onClick={() => {
+                      if (sortBy === "agencyName") {
+                        setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                      } else {
+                        setSortBy("agencyName");
+                        setSortOrder("asc");
+                      }
+                    }}
+                  >
+                    AGENCY <ChevronsUpDown className="h-3 w-3" />
                   </div>
                 </th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -162,6 +249,12 @@ export default function UsersTable() {
                           <div className="text-sm font-bold text-slate-800">{user.name}</div>
                           <div className="text-xs text-slate-400">Verified: {user.verified ? "Yes" : "No"}</div>
                         </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
+                        <Building2 className="h-4 w-4 text-slate-400" />
+                        {user.agency?.facilityName || "No Agency"}
                       </div>
                     </td>
                     <td className="px-6 py-5">
@@ -245,6 +338,12 @@ export default function UsersTable() {
           </div>
         </div>
       </div>
+
+      <AddUserDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          onSuccess={fetchUsers}
+      />
     </div>
   );
 }

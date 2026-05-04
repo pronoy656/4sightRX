@@ -215,7 +215,7 @@ export function FacilitiesTable() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-5 text-sm font-medium text-slate-700">
-                                            {typeof facility.assignAdmin === 'object' ? facility.assignAdmin.name : facility.assignAdmin}
+                                            {facility.assignAdmin && typeof facility.assignAdmin === 'object' ? facility.assignAdmin.name : (facility.assignAdmin || "Unassigned")}
                                         </td>
                                         <td className="px-6 py-5 text-sm font-medium text-slate-700">
                                             {facility.phone}

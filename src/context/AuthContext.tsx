@@ -10,6 +10,7 @@ interface User {
   email: string;
   role: string;
   name?: string;
+  agencyId?: string;
 }
 
 interface AuthContextType {

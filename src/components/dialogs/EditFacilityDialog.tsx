@@ -56,7 +56,7 @@ export function EditFacilityDialog({ open, onOpenChange, facility, onSuccess }: 
                     location: facility.location || "",
                     address: facility.address || "",
                     phone: facility.phone || "",
-                    assignAdmin: typeof facility.assignAdmin === 'object' ? facility.assignAdmin._id : facility.assignAdmin || "",
+                    assignAdmin: facility.assignAdmin && typeof facility.assignAdmin === 'object' ? facility.assignAdmin._id : (facility.assignAdmin || ""),
                     status: facility.status || "active",
                 });
             }
