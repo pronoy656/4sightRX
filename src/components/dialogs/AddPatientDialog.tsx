@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, AlertCircle } from "lucide-react";
 import {
     Dialog,
@@ -31,36 +31,89 @@ interface AddPatientDialogProps {
 
 export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDialogProps) {
     const [formData, setFormData] = useState({
+        organizationId: "",
         firstName: "",
         lastName: "",
-        patientIdMrn: "",
-        dateOfBirth: "",
-        gender: "",
-        phoneNumber: "",
-        medicationAllergies: "",
+        dob: "",
+        sex: "",
+        allergies: [] as any[],
         admissionDate: "",
-        facility: "",
+        lifeExpectancy: "",
         status: "PENDING",
         notes: "",
     });
+    const [organizations, setOrganizations] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [availableAllergies, setAvailableAllergies] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (open) {
+            fetchAllergies();
+            fetchOrganizations();
+        }
+    }, [open]);
+
+    const fetchOrganizations = async () => {
+        try {
+            const response = await axiosSecure.get("/organizations");
+            if (response.data.success) {
+                setOrganizations(response.data.data);
+            }
+        } catch (error) {
+            console.error("Error fetching organizations:", error);
+        }
+    };
+
+    const fetchAllergies = async () => {
+        try {
+            const response = await axiosSecure.get("/allergies");
+            if (response.data.success) {
+                setAvailableAllergies(response.data.data);
+            }
+        } catch (error) {
+            console.error("Error fetching allergies:", error);
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.id]: e.target.value });
     };
 
     const handleSelectChange = (value: string, field: string) => {
-        setFormData({ ...formData, [field]: value });
+        if (field === "allergies") {
+            const selectedAllergy = availableAllergies.find(a => a.name === value);
+            if (selectedAllergy) {
+                setFormData({
+                    ...formData,
+                    allergies: [{
+                        allergyId: selectedAllergy._id,
+                        name: selectedAllergy.name,
+                        custom: false
+                    }]
+                });
+            } else if (value === "None") {
+                setFormData({ ...formData, allergies: [] });
+            }
+        } else {
+            setFormData({ ...formData, [field]: value });
+        }
     };
 
     const handleClose = () => {
         onOpenChange(false);
         setTimeout(() => {
             setFormData({
-                firstName: "", lastName: "", patientIdMrn: "", dateOfBirth: "",
-                gender: "", phoneNumber: "", medicationAllergies: "", admissionDate: "",
-                facility: "", status: "PENDING", notes: "",
+                organizationId: "",
+                firstName: "",
+                lastName: "",
+                dob: "",
+                sex: "",
+                allergies: [],
+                admissionDate: "",
+                lifeExpectancy: "",
+                status: "PENDING",
+                notes: "",
             });
             setError(null);
         }, 200);
@@ -101,38 +154,43 @@ export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDi
                             <span>{error}</span>
                         </div>
                     )}
+                    <div className="space-y-2">
+                        <Label htmlFor="organizationId" className="text-sm font-semibold text-slate-600">Organization <span className="text-red-500">*</span></Label>
+                        <Select value={formData.organizationId} onValueChange={(val) => handleSelectChange(val, "organizationId")} required>
+                            <SelectTrigger className="h-11 border-slate-200 rounded-xl">
+                                <SelectValue placeholder="Select organization" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {organizations.map((org) => (
+                                    <SelectItem key={org._id} value={org._id}>
+                                        {org.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="firstName" className="text-sm font-semibold text-slate-600">First Name</Label>
+                            <Label htmlFor="firstName" className="text-sm font-semibold text-slate-600">First Name <span className="text-red-500">*</span></Label>
                             <Input id="firstName" value={formData.firstName} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="lastName" className="text-sm font-semibold text-slate-600">Last Name</Label>
+                            <Label htmlFor="lastName" className="text-sm font-semibold text-slate-600">Last Name <span className="text-red-500">*</span></Label>
                             <Input id="lastName" value={formData.lastName} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="patientIdMrn" className="text-sm font-semibold text-slate-600">Patient ID / MRN</Label>
-                            <Input id="patientIdMrn" value={formData.patientIdMrn} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
+                            <Label htmlFor="dob" className="text-sm font-semibold text-slate-600">Date of Birth <span className="text-red-500">*</span></Label>
+                            <Input id="dob" type="date" value={formData.dob} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="phoneNumber" className="text-sm font-semibold text-slate-600">Phone Number</Label>
-                            <Input id="phoneNumber" value={formData.phoneNumber} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <Label htmlFor="dateOfBirth" className="text-sm font-semibold text-slate-600">Date of Birth</Label>
-                            <Input id="dateOfBirth" placeholder="DD-MM-YYYY" value={formData.dateOfBirth} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="gender" className="text-sm font-semibold text-slate-600">Gender</Label>
-                            <Select value={formData.gender} onValueChange={(val) => handleSelectChange(val, "gender")} required>
+                            <Label htmlFor="sex" className="text-sm font-semibold text-slate-600">Sex <span className="text-red-500">*</span></Label>
+                            <Select value={formData.sex} onValueChange={(val) => handleSelectChange(val, "sex")} required>
                                 <SelectTrigger className="h-11 border-slate-200 rounded-xl">
-                                    <SelectValue placeholder="Select gender" />
+                                    <SelectValue placeholder="Select sex" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Male">Male</SelectItem>
@@ -145,22 +203,48 @@ export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDi
 
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="facility" className="text-sm font-semibold text-slate-600">Facility</Label>
-                            <Input id="facility" value={formData.facility} onChange={handleChange} className="h-11 border-slate-200 rounded-xl" />
+                            <Label htmlFor="lifeExpectancy" className="text-sm font-semibold text-slate-600">Life Expectancy</Label>
+                            <Select value={formData.lifeExpectancy} onValueChange={(val) => handleSelectChange(val, "lifeExpectancy")}>
+                                <SelectTrigger className="h-11 border-slate-200 rounded-xl">
+                                    <SelectValue placeholder="Select expectancy" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="0-6 days">0-6 days</SelectItem>
+                                    <SelectItem value="1-4 weeks">1-4 weeks</SelectItem>
+                                    <SelectItem value="1-3 months">1-3 months</SelectItem>
+                                    <SelectItem value="4-6 months">4-6 months</SelectItem>
+                                    <SelectItem value=">6 months">&gt;6 months</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="admissionDate" className="text-sm font-semibold text-slate-600">Admission Date</Label>
-                            <Input id="admissionDate" type="date" value={formData.admissionDate} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
+                            <Label htmlFor="admissionDate" className="text-sm font-semibold text-slate-600">Admission Date <span className="text-red-500">*</span></Label>
+                            <Input id="admissionDate" type="datetime-local" value={formData.admissionDate} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="medicationAllergies" className="text-sm font-semibold text-slate-600">Allergies</Label>
-                            <Input id="medicationAllergies" value={formData.medicationAllergies} onChange={handleChange} className="h-11 border-slate-200 rounded-xl" />
+                            <Label htmlFor="allergies" className="text-sm font-semibold text-slate-600">Allergies</Label>
+                            <Select 
+                                value={formData.allergies.length > 0 ? formData.allergies[0].name : "None"} 
+                                onValueChange={(val) => handleSelectChange(val, "allergies")}
+                            >
+                                <SelectTrigger className="h-11 border-slate-200 rounded-xl">
+                                    <SelectValue placeholder="Select allergy" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="None">None</SelectItem>
+                                    {availableAllergies.map((allergy) => (
+                                        <SelectItem key={allergy._id} value={allergy.name}>
+                                            {allergy.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="status" className="text-sm font-semibold text-slate-600">Status</Label>
+                            <Label htmlFor="status" className="text-sm font-semibold text-slate-600">Status <span className="text-red-500">*</span></Label>
                             <Select value={formData.status} onValueChange={(val) => handleSelectChange(val, "status")} required>
                                 <SelectTrigger className="h-11 border-slate-200 rounded-xl">
                                     <SelectValue placeholder="Select status" />

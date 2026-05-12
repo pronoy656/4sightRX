@@ -34,28 +34,12 @@ export function AddInterchangeDialog({ open, onOpenChange, initialData, mode, on
         dosageEquivalence: "",
         estimatedSavings: 0,
         rationale: "",
-        agencyId: "",
     });
-    const [agencies, setAgencies] = useState<{ _id: string; facilityName: string }[]>([]);
+
     const { user } = useAuth();
     const isSuperAdmin = user?.role === "SUPER_ADMIN";
 
-    const fetchAgencies = async () => {
-        try {
-            const response = await axiosSecure.get("/facility");
-            if (response.data.success) {
-                setAgencies(response.data.data);
-            }
-        } catch (error) {
-            console.error("Error fetching agencies:", error);
-        }
-    };
 
-    useEffect(() => {
-        if (open && isSuperAdmin) {
-            fetchAgencies();
-        }
-    }, [open, isSuperAdmin]);
 
     useEffect(() => {
         if (open) {
@@ -67,7 +51,6 @@ export function AddInterchangeDialog({ open, onOpenChange, initialData, mode, on
                     dosageEquivalence: initialData.dosageEquivalence || "",
                     estimatedSavings: initialData.estimatedSavings || 0,
                     rationale: initialData.rationale || "",
-                    agencyId: initialData.agencyId?._id || initialData.agencyId || "",
                 });
             } else {
                 setFormData({
@@ -77,7 +60,6 @@ export function AddInterchangeDialog({ open, onOpenChange, initialData, mode, on
                     dosageEquivalence: "",
                     estimatedSavings: 0,
                     rationale: "",
-                    agencyId: "",
                 });
             }
         }
@@ -92,8 +74,8 @@ export function AddInterchangeDialog({ open, onOpenChange, initialData, mode, on
     };
 
     const handleSubmit = async () => {
-        if (!formData.drugName || !formData.alternative || !formData.drugClass || (isSuperAdmin && !formData.agencyId)) {
-            toast.error("Please fill in all required fields (Drug Name, Alternative, Drug Class" + (isSuperAdmin ? ", Agency" : "") + ")");
+        if (!formData.drugName || !formData.alternative || !formData.drugClass) {
+            toast.error("Please fill in all required fields (Drug Name, Alternative, Drug Class)");
             return;
         }
 
@@ -133,26 +115,7 @@ export function AddInterchangeDialog({ open, onOpenChange, initialData, mode, on
                 </DialogHeader>
 
                 <div className="p-8 pb-10 space-y-5">
-                    {isSuperAdmin && (
-                        <div className="space-y-2">
-                            <Label className="text-sm font-semibold text-slate-600">Agency <span className="text-red-500">*</span></Label>
-                            <Select
-                                value={formData.agencyId}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, agencyId: value }))}
-                            >
-                                <SelectTrigger className="h-11 border-slate-200 rounded-xl focus:ring-1 focus:ring-blue-100">
-                                    <SelectValue placeholder="Select Agency" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {agencies.map((agency) => (
-                                        <SelectItem key={agency._id} value={agency._id}>
-                                            {agency.facilityName}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
+
                     <div className="grid grid-cols-2 gap-5">
                         <div className="space-y-2">
                             <Label className="text-sm font-semibold text-slate-600">Current Drug <span className="text-red-500">*</span></Label>

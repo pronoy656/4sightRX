@@ -1,19 +1,22 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, ChevronsUpDown, ChevronLeft, ChevronRight, Building2, Plus } from "lucide-react";
+import { Search, ChevronsUpDown, ChevronLeft, ChevronRight, Building2, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { AddUserDialog } from "@/components/dialogs/AddUserDialog";
+import { DeleteDialog } from "@/components/dialogs/delete-dialog";
 import axiosSecure from "@/components/hook/axiosSecure";
 import { useDebounce } from "use-debounce";
 import { toast } from "sonner";
 
 interface APIUser {
   _id: string;
-  name: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   role: string;
   email: string;
   image: string;
@@ -21,11 +24,10 @@ interface APIUser {
   verified: boolean;
   specialty: string | null;
   hospitalName: string | null;
-  agencyId: string | null;
-  agency?: {
+  organizationId?: string | null;
+  organization?: {
     _id: string;
-    facilityName: string;
-    location: string;
+    name: string;
   } | null;
   isLogin: boolean;
   createdAt: string;
@@ -34,33 +36,22 @@ interface APIUser {
 
 export default function UsersTable() {
   const [users, setUsers] = useState<APIUser[]>([]);
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch] = useDebounce(searchQuery, 500);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [agencies, setAgencies] = useState<{ _id: string; facilityName: string }[]>([]);
-  const [selectedAgencyId, setSelectedAgencyId] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<APIUser | null>(null);
   const limit = 10;
 
-  const fetchAgencies = async () => {
-    try {
-      const response = await axiosSecure.get("/facility");
-      if (response.data.success) {
-        setAgencies(response.data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching agencies:", error);
-    }
-  };
 
-  useEffect(() => {
-    fetchAgencies();
-  }, []);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -70,13 +61,17 @@ export default function UsersTable() {
           page: currentPage,
           limit: limit,
           search: debouncedSearch,
-          agencyId: selectedAgencyId === "all" ? undefined : selectedAgencyId,
           sortBy: sortBy,
           sortOrder: sortOrder,
+          organizationId: selectedOrgId !== "all" ? selectedOrgId : undefined,
         },
       });
       if (response.data.success) {
-        setUsers(response.data.data);
+        // Filter out admins from the list
+        const filteredUsers = response.data.data.filter((u: APIUser) => 
+          u.role !== "ADMIN" && u.role !== "SUPER_ADMIN"
+        );
+        setUsers(filteredUsers);
         setTotalPages(response.data.pagination.totalPage);
         setTotalRecords(response.data.pagination.total);
       }
@@ -86,7 +81,22 @@ export default function UsersTable() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, debouncedSearch, selectedAgencyId, sortBy, sortOrder]);
+  }, [currentPage, debouncedSearch, sortBy, sortOrder, selectedOrgId]);
+
+  const fetchOrganizations = async () => {
+    try {
+      const response = await axiosSecure.get("/organizations");
+      if (response.data.success) {
+        setOrganizations(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching organizations:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrganizations();
+  }, []);
 
   useEffect(() => {
     fetchUsers();
@@ -107,6 +117,28 @@ export default function UsersTable() {
     } catch (error) {
       console.error("Error updating user status:", error);
       toast.error("Failed to update user status");
+    }
+  };
+
+  const handleDeleteUser = (user: APIUser) => {
+    setUserToDelete(user);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      const response = await axiosSecure.delete(`user/${userToDelete._id}`);
+      if (response.data.success) {
+        toast.success("User deleted successfully");
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Failed to delete user");
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setUserToDelete(null);
     }
   };
 
@@ -136,7 +168,7 @@ export default function UsersTable() {
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
           <Input
-            placeholder="Search by name or email..."
+            placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -146,21 +178,18 @@ export default function UsersTable() {
           />
         </div>
         <div className="w-full md:w-64">
-          <Select
-            value={selectedAgencyId}
-            onValueChange={(value) => {
-              setSelectedAgencyId(value);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl text-slate-800 focus:ring-1 focus:ring-blue-100">
-              <SelectValue placeholder="Filter by Agency" />
+          <Select value={selectedOrgId} onValueChange={(val) => {
+            setSelectedOrgId(val);
+            setCurrentPage(1);
+          }}>
+            <SelectTrigger className="h-12 border-slate-200 rounded-xl">
+              <SelectValue placeholder="All Organizations" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Agencies</SelectItem>
-              {agencies.map((agency) => (
-                <SelectItem key={agency._id} value={agency._id}>
-                  {agency.facilityName}
+              <SelectItem value="all">All Organizations</SelectItem>
+              {organizations.map((org) => (
+                <SelectItem key={org._id} value={org._id}>
+                  {org.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -190,31 +219,16 @@ export default function UsersTable() {
                   </div>
                 </th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  <div 
-                    className="flex items-center gap-1 cursor-pointer hover:text-slate-600 transition-colors"
-                    onClick={() => {
-                      if (sortBy === "agencyName") {
-                        setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                      } else {
-                        setSortBy("agencyName");
-                        setSortOrder("asc");
-                      }
-                    }}
-                  >
-                    AGENCY <ChevronsUpDown className="h-3 w-3" />
-                  </div>
+                  ORGANIZATION
                 </th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
                   EMAIL
                 </th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  ROLE
-                </th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
                   STATUS
                 </th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">
-                  BLOCKED
+                  ACTIONS
                 </th>
               </tr>
             </thead>
@@ -227,7 +241,7 @@ export default function UsersTable() {
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-20 text-center text-slate-400">
                     No users found.
                   </td>
                 </tr>
@@ -238,15 +252,17 @@ export default function UsersTable() {
                       <div className="flex items-center gap-4">
                         <div className="h-10 w-10 rounded-full overflow-hidden bg-blue-50 flex items-center justify-center border border-slate-100">
                           {user.image ? (
-                            <img src={user.image} alt={user.name} className="h-full w-full object-cover" />
+                            <img src={user.image} alt={user.firstName || user.name} className="h-full w-full object-cover" />
                           ) : (
                             <div className="text-blue-600 font-bold text-xs">
-                              {user.name.substring(0, 2).toUpperCase()}
+                              {(user.firstName || user.name || "U").substring(0, 2).toUpperCase()}
                             </div>
                           )}
                         </div>
                         <div>
-                          <div className="text-sm font-bold text-slate-800">{user.name}</div>
+                          <div className="text-sm font-bold text-slate-800">
+                            {user.firstName ? `${user.firstName} ${user.lastName || ""}` : user.name}
+                          </div>
                           <div className="text-xs text-slate-400">Verified: {user.verified ? "Yes" : "No"}</div>
                         </div>
                       </div>
@@ -254,16 +270,12 @@ export default function UsersTable() {
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
                         <Building2 className="h-4 w-4 text-slate-400" />
-                        {user.agency?.facilityName || "No Agency"}
+                        {user.organization?.name || "N/A"}
                       </div>
                     </td>
+
                     <td className="px-6 py-5">
                       <div className="text-sm text-slate-600 font-medium">{user.email}</div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md uppercase">
-                        {user.role}
-                      </span>
                     </td>
                     <td className="px-6 py-5">
                       <span
@@ -277,11 +289,24 @@ export default function UsersTable() {
                         {user.status === "active" ? "Active" : "Blocked"}
                       </span>
                     </td>
-                    <td className="px-6 py-5 text-right">
-                      <Switch
-                        checked={user.status === "blocked"}
-                        onCheckedChange={(checked) => handleToggleStatus(user, checked)}
-                      />
+                    <td className="px-6 py-5">
+                      <div className="flex items-center justify-end gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Blocked</span>
+                          <Switch
+                            checked={user.status === "blocked"}
+                            onCheckedChange={(checked) => handleToggleStatus(user, checked)}
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteUser(user)}
+                          className="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -343,6 +368,13 @@ export default function UsersTable() {
           open={isAddDialogOpen}
           onOpenChange={setIsAddDialogOpen}
           onSuccess={fetchUsers}
+      />
+
+      <DeleteDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        itemName={userToDelete ? (userToDelete.firstName ? `${userToDelete.firstName} ${userToDelete.lastName || ""}` : userToDelete.name) : ""}
       />
     </div>
   );

@@ -38,28 +38,11 @@ export function InterchangesTable() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [agencies, setAgencies] = useState<{ _id: string; facilityName: string }[]>([]);
-    const [selectedAgencyId, setSelectedAgencyId] = useState<string>("all");
     const { user } = useAuth();
     const isSuperAdmin = user?.role === "SUPER_ADMIN";
     const itemsPerPage = 10;
 
-    const fetchAgencies = async () => {
-        try {
-            const response = await axiosSecure.get("/facility");
-            if (response.data.success) {
-                setAgencies(response.data.data);
-            }
-        } catch (error) {
-            console.error("Error fetching agencies:", error);
-        }
-    };
 
-    useEffect(() => {
-        if (isSuperAdmin) {
-            fetchAgencies();
-        }
-    }, [isSuperAdmin]);
 
     const fetchInterchanges = useCallback(async () => {
         setLoading(true);
@@ -69,7 +52,6 @@ export function InterchangesTable() {
                     page: currentPage,
                     limit: itemsPerPage,
                     search: debouncedSearch,
-                    agencyId: selectedAgencyId === "all" ? undefined : selectedAgencyId,
                 },
             });
             if (response.data.success) {
@@ -85,7 +67,7 @@ export function InterchangesTable() {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, debouncedSearch, selectedAgencyId]);
+    }, [currentPage, debouncedSearch]);
 
     useEffect(() => {
         fetchInterchanges();
@@ -138,29 +120,7 @@ export function InterchangesTable() {
                         className="pl-12 h-12 bg-white border-slate-200 rounded-xl text-slate-800 focus-visible:ring-1 focus-visible:ring-blue-100"
                     />
                 </div>
-                {isSuperAdmin && (
-                    <div className="w-full md:w-64">
-                        <Select
-                            value={selectedAgencyId}
-                            onValueChange={(value) => {
-                                setSelectedAgencyId(value);
-                                setCurrentPage(1);
-                            }}
-                        >
-                            <SelectTrigger className="h-12 bg-white border-slate-200 rounded-xl text-slate-800 focus:ring-1 focus:ring-blue-100">
-                                <SelectValue placeholder="Filter by Agency" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Agencies</SelectItem>
-                                {agencies.map((agency) => (
-                                    <SelectItem key={agency._id} value={agency._id}>
-                                        {agency.facilityName}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                )}
+
                 <Button
                     onClick={() => {
                         setDialogMode("add");

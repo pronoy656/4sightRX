@@ -21,48 +21,34 @@ import {
 import axiosSecure from "@/components/hook/axiosSecure";
 import { toast } from "sonner";
 
-interface AddUserDialogProps {
+interface EditOrganizationDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    organization: any;
     onSuccess?: () => void;
 }
 
-export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogProps) {
+export function EditOrganizationDialog({ open, onOpenChange, organization, onSuccess }: EditOrganizationDialogProps) {
     const [loading, setLoading] = useState(false);
-    const [organizations, setOrganizations] = useState<{ _id: string; name: string }[]>([]);
     const [formData, setFormData] = useState({
-        firstName: "",
-        lastName: "",
+        name: "",
         email: "",
-        password: "",
-        organizationId: "",
+        contactNumber: "",
+        address: "",
+        status: "active",
     });
 
     useEffect(() => {
-        if (open) {
-            fetchOrganizations();
+        if (open && organization) {
             setFormData({
-                firstName: "",
-                lastName: "",
-                email: "",
-                password: "",
-                organizationId: "",
+                name: organization.name || "",
+                email: organization.email || "",
+                contactNumber: organization.contactNumber || "",
+                address: organization.address || "",
+                status: organization.status || "active",
             });
         }
-    }, [open]);
-
-
-
-    const fetchOrganizations = async () => {
-        try {
-            const response = await axiosSecure.get("/organizations");
-            if (response.data.success) {
-                setOrganizations(response.data.data);
-            }
-        } catch (error) {
-            console.error("Error fetching organizations:", error);
-        }
-    };
+    }, [open, organization]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -74,22 +60,22 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
     };
 
     const handleSubmit = async () => {
-        if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.organizationId) {
+        if (!formData.name || !formData.email) {
             toast.error("Please fill in all required fields");
             return;
         }
 
         setLoading(true);
         try {
-            const response = await axiosSecure.post("/user", formData);
+            const response = await axiosSecure.patch(`/organizations/${organization._id}`, formData);
             if (response.data.success) {
-                toast.success("User created successfully");
+                toast.success("Organization updated successfully");
                 onSuccess?.();
                 onOpenChange(false);
             }
         } catch (error: any) {
-            console.error("Error creating user:", error);
-            toast.error(error.response?.data?.message || "Failed to create user");
+            console.error("Error updating organization:", error);
+            toast.error(error.response?.data?.message || "Failed to update organization");
         } finally {
             setLoading(false);
         }
@@ -97,9 +83,9 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white focus-visible:outline-none">
+            <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white focus-visible:outline-none">
                 <DialogHeader className="p-6 border-b border-slate-100 flex flex-row items-center justify-between space-y-0 sticky top-0 bg-white z-10">
-                    <DialogTitle className="text-xl font-bold text-slate-800">Add New User</DialogTitle>
+                    <DialogTitle className="text-xl font-bold text-slate-800">Edit Organization</DialogTitle>
                     <DialogClose className="rounded-full h-8 w-8 flex items-center justify-center hover:bg-slate-100 transition-colors">
                         <X className="h-5 w-5 text-slate-400" />
                         <span className="sr-only">Close</span>
@@ -107,72 +93,66 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
                 </DialogHeader>
 
                 <div className="p-8 pb-10 space-y-5">
+                    <div className="space-y-2">
+                        <Label className="text-sm font-semibold text-slate-600">Organization Name <span className="text-red-500">*</span></Label>
+                        <Input
+                            name="name"
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            placeholder="Health Corp"
+                            className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
+                        />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-5">
                         <div className="space-y-2">
-                            <Label className="text-sm font-semibold text-slate-600">First Name <span className="text-red-500">*</span></Label>
+                            <Label className="text-sm font-semibold text-slate-600">Email <span className="text-red-500">*</span></Label>
                             <Input
-                                name="firstName"
-                                value={formData.firstName}
+                                name="email"
+                                type="email"
+                                value={formData.email}
                                 onChange={handleInputChange}
-                                placeholder="John"
+                                placeholder="contact@healthcorp.com"
                                 className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-sm font-semibold text-slate-600">Last Name <span className="text-red-500">*</span></Label>
-                            <Input
-                                name="lastName"
-                                value={formData.lastName}
-                                onChange={handleInputChange}
-                                placeholder="Doe"
-                                className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
-                            />
+                            <Label className="text-sm font-semibold text-slate-600">Status <span className="text-red-500">*</span></Label>
+                            <Select 
+                                value={formData.status} 
+                                onValueChange={(val) => handleSelectChange("status", val)}
+                            >
+                                <SelectTrigger className="h-11 rounded-xl border-slate-200">
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-slate-600">Email Address <span className="text-red-500">*</span></Label>
+                        <Label className="text-sm font-semibold text-slate-600">Contact Number</Label>
                         <Input
-                            name="email"
-                            type="email"
-                            value={formData.email}
+                            name="contactNumber"
+                            value={formData.contactNumber}
                             onChange={handleInputChange}
-                            placeholder="john@example.com"
+                            placeholder="+1 (555) 000-0000"
                             className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-slate-600">Password <span className="text-red-500">*</span></Label>
+                        <Label className="text-sm font-semibold text-slate-600">Address</Label>
                         <Input
-                            name="password"
-                            type="password"
-                            value={formData.password}
+                            name="address"
+                            value={formData.address}
                             onChange={handleInputChange}
-                            placeholder="Enter a secure password"
+                            placeholder="123 Main St, Anytown, USA"
                             className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
                         />
-                    </div>
-
-
-
-                    <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-slate-600">Organization <span className="text-red-500">*</span></Label>
-                        <Select 
-                            value={formData.organizationId} 
-                            onValueChange={(val) => handleSelectChange("organizationId", val)}
-                        >
-                            <SelectTrigger className="h-11 rounded-xl border-slate-200">
-                                <SelectValue placeholder="Select organization" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {organizations.map((org) => (
-                                    <SelectItem key={org._id} value={org._id}>
-                                        {org.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
                     </div>
 
                     <div className="flex items-center gap-4 pt-6">
@@ -189,7 +169,7 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
                             onClick={handleSubmit}
                             disabled={loading}
                         >
-                            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Create User"}
+                            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Update Organization"}
                         </Button>
                     </div>
                 </div>

@@ -42,7 +42,9 @@ const sections: NavSection[] = [
     items: [
       { href: "/users", label: "User Management", Icon: Users },
       { href: "/patients", label: "Patient Records", Icon: UserRound },
-      { href: "/facilities", label: "Facilities & Agencies", Icon: Building2 },
+      // { href: "/facilities", label: "Facilities & Agencies", Icon: Building2 },
+      { href: "/organizations", label: "Organizations", Icon: Building2 },
+      { href: "/allergies", label: "Allergies", Icon: Shield },
       { href: "/formularies", label: "Drug Formularies", Icon: FileSpreadsheet },
     ],
   },

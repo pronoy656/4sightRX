@@ -34,33 +34,62 @@ interface ViewPatientDialogProps {
 
 export function ViewPatientDialog({ open, onOpenChange, patient, isEditMode = false, onSuccess }: ViewPatientDialogProps) {
     const [formData, setFormData] = useState({
+        organizationId: "",
         firstName: "",
         lastName: "",
-        patientIdMrn: "",
-        dateOfBirth: "",
-        gender: "",
-        phoneNumber: "",
-        medicationAllergies: "",
+        dob: "",
+        sex: "",
+        allergies: [] as any[],
         admissionDate: "",
-        facility: "",
+        lifeExpectancy: "",
         status: "",
         notes: "",
     });
+    const [organizations, setOrganizations] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [availableAllergies, setAvailableAllergies] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (open) {
+            fetchAllergies();
+            fetchOrganizations();
+        }
+    }, [open]);
+
+    const fetchOrganizations = async () => {
+        try {
+            const response = await axiosSecure.get("/organizations");
+            if (response.data.success) {
+                setOrganizations(response.data.data);
+            }
+        } catch (error) {
+            console.error("Error fetching organizations:", error);
+        }
+    };
+
+    const fetchAllergies = async () => {
+        try {
+            const response = await axiosSecure.get("/allergies");
+            if (response.data.success) {
+                setAvailableAllergies(response.data.data);
+            }
+        } catch (error) {
+            console.error("Error fetching allergies:", error);
+        }
+    };
 
     useEffect(() => {
         if (patient && open) {
             setFormData({
+                organizationId: patient.organizationId || "",
                 firstName: patient.firstName || "",
                 lastName: patient.lastName || "",
-                patientIdMrn: patient.patientIdMrn || "",
-                dateOfBirth: patient.dateOfBirth || "",
-                gender: patient.gender || "",
-                phoneNumber: patient.phoneNumber || "",
-                medicationAllergies: patient.medicationAllergies || "",
-                admissionDate: patient.admissionDate ? new Date(patient.admissionDate).toISOString().split('T')[0] : "",
-                facility: patient.facility || "",
+                dob: patient.dob ? new Date(patient.dob).toISOString().split('T')[0] : "",
+                sex: patient.sex || "",
+                allergies: patient.allergies || [] as any,
+                admissionDate: patient.admissionDate ? new Date(patient.admissionDate).toISOString().slice(0, 16) : "",
+                lifeExpectancy: patient.lifeExpectancy || "",
                 status: patient.status || "ACTIVE",
                 notes: patient.notes || "",
             });
@@ -75,7 +104,23 @@ export function ViewPatientDialog({ open, onOpenChange, patient, isEditMode = fa
     };
 
     const handleSelectChange = (value: string, field: string) => {
-        setFormData({ ...formData, [field]: value });
+        if (field === "allergies") {
+            const selectedAllergy = availableAllergies.find(a => a.name === value);
+            if (selectedAllergy) {
+                setFormData({
+                    ...formData,
+                    allergies: [{
+                        allergyId: selectedAllergy._id,
+                        name: selectedAllergy.name,
+                        custom: false
+                    }]
+                });
+            } else if (value === "None") {
+                setFormData({ ...formData, allergies: [] });
+            }
+        } else {
+            setFormData({ ...formData, [field]: value });
+        }
     };
 
     const handleUpdate = async (e: React.FormEvent) => {
@@ -116,36 +161,43 @@ export function ViewPatientDialog({ open, onOpenChange, patient, isEditMode = fa
                                 <span>{error}</span>
                             </div>
                         )}
+                        <div className="space-y-2">
+                            <Label htmlFor="organizationId" className="text-sm font-semibold text-slate-600">Organization <span className="text-red-500">*</span></Label>
+                            <Select value={formData.organizationId} onValueChange={(val) => handleSelectChange(val, "organizationId")} required>
+                                <SelectTrigger className="h-11 border-slate-200 rounded-xl">
+                                    <SelectValue placeholder="Select organization" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {organizations.map((org) => (
+                                        <SelectItem key={org._id} value={org._id}>
+                                            {org.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="firstName" className="text-sm font-semibold text-slate-600">First Name</Label>
+                                <Label htmlFor="firstName" className="text-sm font-semibold text-slate-600">First Name <span className="text-red-500">*</span></Label>
                                 <Input id="firstName" value={formData.firstName} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="lastName" className="text-sm font-semibold text-slate-600">Last Name</Label>
+                                <Label htmlFor="lastName" className="text-sm font-semibold text-slate-600">Last Name <span className="text-red-500">*</span></Label>
                                 <Input id="lastName" value={formData.lastName} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
                             </div>
                         </div>
+
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="patientIdMrn" className="text-sm font-semibold text-slate-600">Patient ID</Label>
-                                <Input id="patientIdMrn" value={formData.patientIdMrn} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
+                                <Label htmlFor="dob" className="text-sm font-semibold text-slate-600">Date of Birth <span className="text-red-500">*</span></Label>
+                                <Input id="dob" type="date" value={formData.dob} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="phoneNumber" className="text-sm font-semibold text-slate-600">Phone</Label>
-                                <Input id="phoneNumber" value={formData.phoneNumber} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="dateOfBirth" className="text-sm font-semibold text-slate-600">DOB</Label>
-                                <Input id="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="gender" className="text-sm font-semibold text-slate-600">Gender</Label>
-                                <Select value={formData.gender} onValueChange={(val) => handleSelectChange(val, "gender")} required>
+                                <Label htmlFor="sex" className="text-sm font-semibold text-slate-600">Sex <span className="text-red-500">*</span></Label>
+                                <Select value={formData.sex} onValueChange={(val) => handleSelectChange(val, "sex")} required>
                                     <SelectTrigger className="h-11 border-slate-200 rounded-xl">
-                                        <SelectValue placeholder="Select gender" />
+                                        <SelectValue placeholder="Select sex" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="Male">Male</SelectItem>
@@ -155,23 +207,51 @@ export function ViewPatientDialog({ open, onOpenChange, patient, isEditMode = fa
                                 </Select>
                             </div>
                         </div>
+
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="facility" className="text-sm font-semibold text-slate-600">Facility</Label>
-                                <Input id="facility" value={formData.facility} onChange={handleChange} className="h-11 border-slate-200 rounded-xl" />
+                                <Label htmlFor="lifeExpectancy" className="text-sm font-semibold text-slate-600">Life Expectancy</Label>
+                                <Select value={formData.lifeExpectancy} onValueChange={(val) => handleSelectChange(val, "lifeExpectancy")}>
+                                    <SelectTrigger className="h-11 border-slate-200 rounded-xl">
+                                        <SelectValue placeholder="Select expectancy" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="0-6 days">0-6 days</SelectItem>
+                                        <SelectItem value="1-4 weeks">1-4 weeks</SelectItem>
+                                        <SelectItem value="1-3 months">1-3 months</SelectItem>
+                                        <SelectItem value="4-6 months">4-6 months</SelectItem>
+                                        <SelectItem value=">6 months">&gt;6 months</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="admissionDate" className="text-sm font-semibold text-slate-600">Admission Date</Label>
-                                <Input id="admissionDate" type="date" value={formData.admissionDate} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
+                                <Label htmlFor="admissionDate" className="text-sm font-semibold text-slate-600">Admission Date <span className="text-red-500">*</span></Label>
+                                <Input id="admissionDate" type="datetime-local" value={formData.admissionDate} onChange={handleChange} required className="h-11 border-slate-200 rounded-xl" />
                             </div>
                         </div>
+
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="medicationAllergies" className="text-sm font-semibold text-slate-600">Allergies</Label>
-                                <Input id="medicationAllergies" value={formData.medicationAllergies} onChange={handleChange} className="h-11 border-slate-200 rounded-xl" />
+                                <Label htmlFor="allergies" className="text-sm font-semibold text-slate-600">Allergies</Label>
+                                <Select 
+                                    value={formData.allergies.length > 0 ? formData.allergies[0].name : "None"} 
+                                    onValueChange={(val) => handleSelectChange(val, "allergies")}
+                                >
+                                    <SelectTrigger className="h-11 border-slate-200 rounded-xl">
+                                        <SelectValue placeholder="Select allergy" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="None">None</SelectItem>
+                                        {availableAllergies.map((allergy) => (
+                                            <SelectItem key={allergy._id} value={allergy.name}>
+                                                {allergy.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="status" className="text-sm font-semibold text-slate-600">Status</Label>
+                                <Label htmlFor="status" className="text-sm font-semibold text-slate-600">Status <span className="text-red-500">*</span></Label>
                                 <Select value={formData.status} onValueChange={(val) => handleSelectChange(val, "status")} required>
                                     <SelectTrigger className="h-11 border-slate-200 rounded-xl">
                                         <SelectValue placeholder="Select status" />
@@ -184,6 +264,7 @@ export function ViewPatientDialog({ open, onOpenChange, patient, isEditMode = fa
                                 </Select>
                             </div>
                         </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="notes" className="text-sm font-semibold text-slate-600">Notes (Optional)</Label>
                             <Textarea id="notes" value={formData.notes} onChange={handleChange} placeholder="Additional notes..." className="min-h-[100px] border-slate-200 rounded-xl resize-none" />
@@ -213,19 +294,26 @@ export function ViewPatientDialog({ open, onOpenChange, patient, isEditMode = fa
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-1">
                                 <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Admission Date</Label>
-                                <p className="text-slate-800 font-medium">{new Date(patient.admissionDate).toLocaleDateString()}</p>
+                                <p className="text-slate-800 font-medium">{new Date(patient.admissionDate).toLocaleString()}</p>
                             </div>
                             <div className="space-y-1">
-                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Age / Gender</Label>
-                                <p className="text-slate-800 font-medium">{patient.age} / {patient.gender}</p>
+                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Age / Sex</Label>
+                                <p className="text-slate-800 font-medium">{patient.age} / {patient.sex}</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-1">
-                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Phone Number</Label>
-                                <p className="text-slate-800 font-medium">{patient.phoneNumber || "N/A"}</p>
+                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Organization</Label>
+                                <p className="text-slate-800 font-medium">{patient.organization?.name || "N/A"}</p>
                             </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Life Expectancy</Label>
+                                <p className="text-slate-800 font-medium">{patient.lifeExpectancy || "N/A"}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-1">
                                 <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</Label>
                                 <div>
@@ -234,11 +322,25 @@ export function ViewPatientDialog({ open, onOpenChange, patient, isEditMode = fa
                                     </span>
                                 </div>
                             </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">DOB</Label>
+                                <p className="text-slate-800 font-medium">{new Date(patient.dob).toLocaleDateString()}</p>
+                            </div>
                         </div>
                         
                         <div className="space-y-1">
                             <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Allergies</Label>
-                            <p className="text-slate-800 font-medium">{patient.medicationAllergies || "N/A"}</p>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                                {patient.allergies && patient.allergies.length > 0 ? (
+                                    patient.allergies.map((allergy: any, idx: number) => (
+                                        <span key={idx} className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md uppercase">
+                                            {allergy.name}
+                                        </span>
+                                    ))
+                                ) : (
+                                    <p className="text-slate-800 font-medium text-sm">None</p>
+                                )}
+                            </div>
                         </div>
 
                         <div className="space-y-1 pt-2">
