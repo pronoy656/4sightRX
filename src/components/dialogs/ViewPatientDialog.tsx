@@ -82,7 +82,7 @@ export function ViewPatientDialog({ open, onOpenChange, patient, isEditMode = fa
     useEffect(() => {
         if (patient && open) {
             setFormData({
-                organizationId: patient.organizationId || "",
+                organizationId: (typeof patient.organizationId === 'object' ? patient.organizationId?._id : patient.organizationId) || "",
                 firstName: patient.firstName || "",
                 lastName: patient.lastName || "",
                 dob: patient.dob ? new Date(patient.dob).toISOString().split('T')[0] : "",
@@ -305,7 +305,7 @@ export function ViewPatientDialog({ open, onOpenChange, patient, isEditMode = fa
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-1">
                                 <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Organization</Label>
-                                <p className="text-slate-800 font-medium">{patient.organization?.name || "N/A"}</p>
+                                <p className="text-slate-800 font-medium">{patient.organizationId?.name || "N/A"}</p>
                             </div>
                             <div className="space-y-1">
                                 <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Life Expectancy</Label>
