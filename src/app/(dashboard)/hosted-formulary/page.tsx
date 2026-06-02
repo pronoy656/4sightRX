@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  Search, 
-  Plus, 
-  Pencil, 
-  Trash2, 
-  Upload, 
-  Download, 
+import {
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  Upload,
+  Download,
   RefreshCw,
   Loader2
 } from "lucide-react";
@@ -16,24 +16,24 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import axiosSecure from "@/components/hook/axiosSecure";
-import { 
-  EditHostedFormularyDialog, 
-  HostedFormularyItem 
+import {
+  EditHostedFormularyDialog,
+  HostedFormularyItem
 } from "@/components/dialogs/EditHostedFormularyDialog";
 
 export default function HostedFormularyPage() {
   const [data, setData] = useState<HostedFormularyItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDragActive, setIsDragActive] = useState(false);
-  
+
   const [editItem, setEditItem] = useState<HostedFormularyItem | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  
+
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  
+
   useEffect(() => {
     const fetchFormularies = async () => {
       try {
@@ -51,7 +51,7 @@ export default function HostedFormularyPage() {
     };
     fetchFormularies();
   }, []);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -72,7 +72,7 @@ export default function HostedFormularyPage() {
           "Content-Type": "multipart/form-data"
         }
       });
-      
+
       if (response.data.success) {
         const resultData = response.data.data;
         // Ensure imported data has a unique ID for local editing
@@ -127,12 +127,12 @@ export default function HostedFormularyPage() {
       ["P", "Morphine ER", "15 mg ER", "PO", "Q12H", "0", "—"],
       ["N", "Oxycodone ER", "20 mg ER", "PO", "Q12H", "0", "Morphine ER 15-30 mg PO Q12H ($30/mo)"],
     ];
-    
+
     const csvContent = "\uFEFF" + [
       headers.join(","),
       ...rows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(","))
     ].join("\n");
-    
+
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -151,40 +151,27 @@ export default function HostedFormularyPage() {
     setIsEditDialogOpen(true);
   };
 
-  const handleAddNewClick = () => {
-    const newItem: HostedFormularyItem = {
-      tier: "P",
-      medication: "",
-      strength: "",
-      route: "PO",
-      frequency: "Q12H",
-      monthlyCost: 0,
-      preferredAlternative: "—"
-    };
-    setEditItem(newItem);
-    setIsAddingNew(true);
-    setIsEditDialogOpen(true);
-  };
+
 
   const handleDialogSave = async (updatedItem: HostedFormularyItem) => {
     try {
       const { _id, id, ...rest } = updatedItem;
       const targetId = _id || id;
       const isExistingInDb = targetId && !targetId.startsWith("temp-");
-      
+
       if (isExistingInDb) {
         // Phase C: Database Data Editing (After Hosting)
         // Only that specific row is updated in the database
         const response = await axiosSecure.patch(`/medication-tier/${targetId}`, rest);
-        
+
         if (response.data.success && response.data.data) {
-          const savedItem = Array.isArray(response.data.data) 
-            ? response.data.data[0] 
+          const savedItem = Array.isArray(response.data.data)
+            ? response.data.data[0]
             : response.data.data;
-            
+
           setData(prev => prev.map(item => {
-            const isMatch = 
-              (item._id && updatedItem._id && item._id === updatedItem._id) || 
+            const isMatch =
+              (item._id && updatedItem._id && item._id === updatedItem._id) ||
               (item.id && updatedItem.id && item.id === updatedItem.id);
             return isMatch ? savedItem : item;
           }));
@@ -201,8 +188,8 @@ export default function HostedFormularyPage() {
           toast.success("New medication added locally.");
         } else {
           setData(prev => prev.map(item => {
-            const isMatch = 
-              (item._id && updatedItem._id && item._id === updatedItem._id) || 
+            const isMatch =
+              (item._id && updatedItem._id && item._id === updatedItem._id) ||
               (item.id && updatedItem.id && item.id === updatedItem.id);
             return isMatch ? updatedItem : item;
           }));
@@ -248,11 +235,11 @@ export default function HostedFormularyPage() {
       });
 
       const response = await axiosSecure.post("/medication-tier", payload);
-      
+
       if (response.data.success) {
         toast.success(response.data.message || "Hosted Formulary saved successfully!");
         if (response.data.data) {
-           setData(response.data.data);
+          setData(response.data.data);
         }
       } else {
         toast.error(response.data.message || "Failed to save data.");
@@ -282,7 +269,7 @@ export default function HostedFormularyPage() {
   const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="py-8 px-4 space-y-8 max-w-7xl mx-auto">
+    <div className="py-8 px-4 space-y-8 ">
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -308,26 +295,20 @@ export default function HostedFormularyPage() {
             <Download className="h-4 w-4" />
             Download Template
           </Button>
-          <Button
-            onClick={handleAddNewClick}
-            className="h-12 px-6 bg-[#002B54] hover:bg-[#002B54]/90 rounded-xl text-white font-bold flex items-center gap-2 transition-colors shrink-0"
-          >
-            <Plus className="h-5 w-5" />
-            Add Row
-          </Button>
+
         </div>
       </div>
 
       {/* File Upload Section */}
-      <div 
+      <div
         onDragEnter={handleDrag}
         onDragOver={handleDrag}
         onDragLeave={handleDrag}
         onDrop={handleDrop}
         className={cn(
           "relative bg-white border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all duration-300 min-h-[200px]",
-          isDragActive 
-            ? "border-[#002B54] bg-[#002B54]/[0.02] scale-[1.01]" 
+          isDragActive
+            ? "border-[#002B54] bg-[#002B54]/[0.02] scale-[1.01]"
             : "border-slate-200 hover:border-slate-300"
         )}
       >
@@ -339,7 +320,7 @@ export default function HostedFormularyPage() {
           disabled={isUploading}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
         />
-        
+
         {isUploading ? (
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 text-[#002B54] animate-spin" />
@@ -425,11 +406,11 @@ export default function HostedFormularyPage() {
                     <td className="px-6 py-5">
                       <span className={cn(
                         "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold",
-                        item.tier.toUpperCase() === "P" 
-                          ? "bg-emerald-50 text-emerald-600 border border-emerald-100" 
+                        item.tier.toUpperCase() === "P"
+                          ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
                           : item.tier.toUpperCase() === "N"
-                          ? "bg-amber-50 text-amber-600 border border-amber-100"
-                          : "bg-blue-50 text-blue-600 border border-blue-100"
+                            ? "bg-amber-50 text-amber-600 border border-amber-100"
+                            : "bg-blue-50 text-blue-600 border border-blue-100"
                       )}>
                         {item.tier}
                       </span>
