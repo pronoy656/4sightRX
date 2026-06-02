@@ -15,6 +15,7 @@ import {
   LucideIcon,
   Shield,
   Building2,
+  FileUp,
 } from "lucide-react";
 
 type IconType = LucideIcon;
@@ -46,6 +47,7 @@ const sections: NavSection[] = [
       { href: "/organizations", label: "Organizations", Icon: Building2 },
       { href: "/allergies", label: "Allergies", Icon: Shield },
       { href: "/formularies", label: "Drug Formularies", Icon: FileSpreadsheet },
+      { href: "/hosted-formulary", label: "Hosted Formulary", Icon: FileUp },
     ],
   },
 ];
