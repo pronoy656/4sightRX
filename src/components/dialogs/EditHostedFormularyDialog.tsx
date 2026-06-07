@@ -21,6 +21,7 @@ export interface HostedFormularyItem {
     route: string;
     frequency: string;
     monthlyCost: number;
+    alternativeMonthlyCost: number;
     preferredAlternative: string;
 }
 
@@ -44,6 +45,7 @@ export function EditHostedFormularyDialog({
         route: "",
         frequency: "",
         monthlyCost: 0,
+        alternativeMonthlyCost: 0,
         preferredAlternative: "",
     });
 
@@ -54,7 +56,7 @@ export function EditHostedFormularyDialog({
     }, [open, data]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.id === "monthlyCost" ? Number(e.target.value) : e.target.value;
+        const value = (e.target.id === "monthlyCost" || e.target.id === "alternativeMonthlyCost") ? Number(e.target.value) : e.target.value;
         setFormData({ ...formData, [e.target.id]: value });
     };
 
@@ -154,15 +156,28 @@ export function EditHostedFormularyDialog({
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="preferredAlternative" className="text-sm font-semibold text-slate-600">Preferred Alternative</Label>
+                            <Label htmlFor="alternativeMonthlyCost" className="text-sm font-semibold text-slate-600">Alt Monthly Cost ($)*</Label>
                             <Input
-                                id="preferredAlternative"
-                                placeholder="e.g., Morphine ER 15-30 mg"
-                                value={formData.preferredAlternative}
+                                id="alternativeMonthlyCost"
+                                type="number"
+                                placeholder="e.g., 0"
+                                value={formData.alternativeMonthlyCost}
                                 onChange={handleChange}
+                                required
                                 className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
                             />
                         </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="preferredAlternative" className="text-sm font-semibold text-slate-600">Preferred Alternative</Label>
+                        <Input
+                            id="preferredAlternative"
+                            placeholder="e.g., Morphine ER 15-30 mg"
+                            value={formData.preferredAlternative}
+                            onChange={handleChange}
+                            className="h-11 border-slate-200 rounded-xl focus-visible:ring-1 focus-visible:ring-blue-100"
+                        />
                     </div>
 
                     <div className="flex items-center gap-4 pt-6">

@@ -40,7 +40,11 @@ export default function HostedFormularyPage() {
         setIsLoadingData(true);
         const response = await axiosSecure.get("/medication-tier");
         if (response.data.success && response.data.data) {
-          setData(response.data.data);
+          const dataWithDefaults = response.data.data.map((item: any) => ({
+            ...item,
+            alternativeMonthlyCost: item.alternativeMonthlyCost ?? 0
+          }));
+          setData(dataWithDefaults);
         }
       } catch (err: any) {
         console.error("Error fetching data:", err);
@@ -75,9 +79,10 @@ export default function HostedFormularyPage() {
 
       if (response.data.success) {
         const resultData = response.data.data;
-        // Ensure imported data has a unique ID for local editing
+        // Ensure imported data has a unique ID for local editing and default values
         const dataWithIds = resultData.data.map((item: any, idx: number) => ({
           ...item,
+          alternativeMonthlyCost: item.alternativeMonthlyCost ?? 0,
           _id: item._id || `temp-import-${Date.now()}-${idx}`
         }));
         setData(dataWithIds);
@@ -122,11 +127,8 @@ export default function HostedFormularyPage() {
   };
 
   const handleDownloadTemplate = () => {
-    const headers = ["Tier", "Medication", "Strength", "Route", "Frequency", "Monthly Cost", "Preferred Alternative"];
-    const rows = [
-      ["P", "Morphine ER", "15 mg ER", "PO", "Q12H", "0", "—"],
-      ["N", "Oxycodone ER", "20 mg ER", "PO", "Q12H", "0", "Morphine ER 15-30 mg PO Q12H ($30/mo)"],
-    ];
+    const headers = ["Tier", "Medication", "Strength", "Route", "Frequency", "Monthly Cost", "Alternative Monthly Cost", "Preferred Alternative"];
+    const rows: string[][] = [];
 
     const csvContent = "\uFEFF" + [
       headers.join(","),
@@ -162,7 +164,10 @@ export default function HostedFormularyPage() {
       if (isExistingInDb) {
         // Phase C: Database Data Editing (After Hosting)
         // Only that specific row is updated in the database
-        const response = await axiosSecure.patch(`/medication-tier/${targetId}`, rest);
+        const response = await axiosSecure.patch(`/medication-tier/${targetId}`, {
+          ...rest,
+          alternativeMonthlyCost: rest.alternativeMonthlyCost ?? 0
+        });
 
         if (response.data.success && response.data.data) {
           const savedItem = Array.isArray(response.data.data)
@@ -226,12 +231,16 @@ export default function HostedFormularyPage() {
     try {
       const payload = data.map(item => {
         const { _id, id, ...rest } = item;
+        const processedItem = {
+          ...rest,
+          alternativeMonthlyCost: rest.alternativeMonthlyCost ?? 0
+        };
         // Keep the _id if it's a real backend ID to allow updating existing records,
         // otherwise send without _id so the backend treats it as a new creation.
         if (_id && !_id.startsWith("temp-")) {
-          return { ...rest, _id };
+          return { ...processedItem, _id };
         }
-        return rest;
+        return processedItem;
       });
 
       const response = await axiosSecure.post("/medication-tier", payload);
@@ -335,7 +344,7 @@ export default function HostedFormularyPage() {
               Drag & drop your formulary file here
             </h3>
             <p className="text-xs text-slate-400 max-w-md mb-4 leading-normal">
-              Supported file format: .csv or .xlsx. Headings should include: <strong>Tier, Medication, Strength, Route, Frequency, Monthly Cost, Preferred Alternative</strong>.
+              Supported file format: .csv or .xlsx. Headings should include: <strong>Tier, Medication, Strength, Route, Frequency, Monthly Cost, Alternative Monthly Cost, Preferred Alternative</strong>.
             </p>
             <Button
               type="button"
@@ -374,20 +383,21 @@ export default function HostedFormularyPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-slate-50 bg-slate-50/50">
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[12%]">TIER</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[23%]">MEDICATION</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[12%]">STRENGTH</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[10%]">ROUTE</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[12%]">FREQ</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[10%]">MONTHLY COST</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[21%]">PREFERRED ALTERNATIVE</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right w-[10%]">ACTION</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[10%]">TIER</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[20%]">MEDICATION</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[10%]">STRENGTH</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[8%]">ROUTE</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[10%]">FREQ</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[8%]">MONTHLY COST</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[8%]">ALT COST</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-[18%]">PREFERRED ALTERNATIVE</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right w-[8%]">ACTION</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {isLoadingData ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center">
+                  <td colSpan={9} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <Loader2 className="h-8 w-8 text-[#002B54] animate-spin" />
                       <span className="text-slate-500 font-medium">Loading formularies...</span>
@@ -396,7 +406,7 @@ export default function HostedFormularyPage() {
                 </tr>
               ) : paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center text-slate-400 font-medium">
+                  <td colSpan={9} className="px-6 py-16 text-center text-slate-400 font-medium">
                     No medications found. Try uploading a CSV/XLSX file or adding a row manually.
                   </td>
                 </tr>
@@ -429,6 +439,9 @@ export default function HostedFormularyPage() {
                     </td>
                     <td className="px-6 py-5 text-sm font-medium text-slate-600">
                       ${item.monthlyCost}
+                    </td>
+                    <td className="px-6 py-5 text-sm font-medium text-slate-600">
+                      ${item.alternativeMonthlyCost || 0}
                     </td>
                     <td className="px-6 py-5 text-sm text-slate-500 font-medium">
                       {item.preferredAlternative === "—" || !item.preferredAlternative ? (
